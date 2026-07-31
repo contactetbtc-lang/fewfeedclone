@@ -4,7 +4,7 @@ import multer from 'multer';
 import { FacebookPublisher } from '../facebook-publisher.js';
 
 const app = express();
-
+import { FacebookPublisher } from './facebook-publisher.js';
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
