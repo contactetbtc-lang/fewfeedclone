@@ -1,25 +1,17 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import multer from 'multer';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
 import { FacebookPublisher } from '../facebook-publisher.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Set up temporary upload directory for Vercel
-const uploadDir = '/tmp/uploads';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-const upload = multer({ dest: uploadDir });
+// Serverless environments require Memory Storage for Multer
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -88,7 +80,6 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
     try {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
 
         res.write('🔄 Server received publish request...\n');
 
@@ -105,18 +96,10 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
             callToActionType
         } = req.body;
 
-        if (!req.file) {
-            res.write('❌ No image file was uploaded\n');
-            return res.end();
-        }
-
         if (!accessToken || !cookieData || !linkUrl || !linkName || !pageId) {
-            res.write('❌ Missing required fields\n');
+            res.write('❌ Missing required text fields\n');
             return res.end();
         }
-
-        const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-        res.write(`✅ Image prepared: ${imageUrl}\n`);
 
         console.log = (...args) => {
             res.write(args.join(' ') + '\n');
@@ -135,8 +118,11 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
             pageId
         });
 
+        // Pass file buffer directly if available
+        const imageBuffer = req.file ? req.file.buffer : null;
+
         const result = await publisher.publishToFacebook(
-            imageUrl,
+            imageBuffer,
             linkUrl,
             linkName,
             caption,
@@ -144,20 +130,15 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
             callToActionType
         );
 
-        res.write(`\n🎉 Success! Post published: ${result.url}\n`);
+        res.write(`\n🎉 Success! Post published: ${result.url || 'Done'}\n`);
     } catch (error) {
         res.write(`\n💥 Publishing failed: ${error.message}\n`);
     } finally {
         console.log = originalLog;
         console.error = originalError;
-
-        if (req.file && fs.existsSync(req.file.path)) {
-            try {
-                fs.unlinkSync(req.file.path);
-            } catch (err) {}
-        }
         res.end();
     }
 });
 
+// Export default Express handler for Vercel
 export default app;
