@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import { FacebookPublisher } from '../facebook-publisher.js';
+
 
 const app = express();
 import { FacebookPublisher } from './facebook-publisher.js';
