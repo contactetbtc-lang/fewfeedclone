@@ -2,13 +2,13 @@
   "name": "fewfeedclone",
   "version": "1.0.0",
   "description": "Facebook Auto Publisher App",
-  "main": "server.js",
+  "main": "api/index.js",
   "type": "module",
   "engines": {
     "node": "20.x"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node api/index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
