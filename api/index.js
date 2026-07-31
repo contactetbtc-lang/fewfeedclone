@@ -4,35 +4,29 @@ import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { FacebookPublisher } from './facebook-publisher.js';
+import { FacebookPublisher } from '../facebook-publisher.js';
 
-// Setup __dirname for ES Modules in Node environment
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// Enable CORS for Chrome Extension or external requests
 app.use(cors());
 app.use(express.json());
 
-// Setup temporary upload directory (Vercel serverless requires /tmp)
-const uploadDir = process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, 'uploads');
+// Set up temporary upload directory for Vercel
+const uploadDir = '/tmp/uploads';
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 const upload = multer({ dest: uploadDir });
-
-app.use(express.static(__dirname));
-app.use('/uploads', express.static(uploadDir));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Endpoint to provide default values to frontend
+// Endpoint to provide default values
 app.get('/api/defaults', (req, res) => {
     res.json({
         accessToken: process.env.ACCESS_TOKEN || '',
@@ -48,11 +42,10 @@ app.get('/api/defaults', (req, res) => {
     });
 });
 
-// Endpoint to receive auto-synced tokens from Extension
+// Sync tokens endpoint
 app.post('/api/update-tokens', (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
-
         if (!accessToken || !cookieData) {
             return res.status(400).json({ error: 'Missing required accessToken or cookieData' });
         }
@@ -61,37 +54,13 @@ app.post('/api/update-tokens', (req, res) => {
         process.env.ACCESS_TOKEN2 = accessToken;
         process.env.COOKIE_DATA = cookieData;
 
-        // Persist to .env locally if not running on Vercel
-        if (!process.env.VERCEL) {
-            const envPath = path.join(__dirname, '.env');
-            let envContent = '';
-
-            if (fs.existsSync(envPath)) {
-                envContent = fs.readFileSync(envPath, 'utf8');
-                envContent = envContent.includes('ACCESS_TOKEN=')
-                    ? envContent.replace(/ACCESS_TOKEN=.*/, `ACCESS_TOKEN=${accessToken}`)
-                    : envContent + `\nACCESS_TOKEN=${accessToken}`;
-                envContent = envContent.includes('ACCESS_TOKEN2=')
-                    ? envContent.replace(/ACCESS_TOKEN2=.*/, `ACCESS_TOKEN2=${accessToken}`)
-                    : envContent + `\nACCESS_TOKEN2=${accessToken}`;
-                envContent = envContent.includes('COOKIE_DATA=')
-                    ? envContent.replace(/COOKIE_DATA=.*/, `COOKIE_DATA=${cookieData}`)
-                    : envContent + `\nCOOKIE_DATA=${cookieData}`;
-            } else {
-                envContent = `ACCESS_TOKEN=${accessToken}\nACCESS_TOKEN2=${accessToken}\nCOOKIE_DATA=${cookieData}\n`;
-            }
-            fs.writeFileSync(envPath, envContent);
-        }
-
-        console.log('✅ Tokens auto-synced successfully!');
         res.json({ success: true, message: 'Tokens updated successfully' });
     } catch (err) {
-        console.error('❌ Failed to update tokens:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Endpoint to fetch Profile and Pages dynamically
+// Account info endpoint
 app.post('/api/account-info', async (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
@@ -109,10 +78,6 @@ app.post('/api/account-info', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Publishing Endpoint
@@ -195,12 +160,4 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
     }
 });
 
-// Local development listener
-if (!process.env.VERCEL) {
-    app.listen(port, () => {
-        console.log(`✅ Server running at http://localhost:${port}`);
-    });
-}
-
-// Export app for Vercel Serverless Function
 export default app;
