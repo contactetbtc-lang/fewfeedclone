@@ -1,17 +1,25 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-
+import path from 'path';
+import { FacebookPublisher } from './facebook-publisher.js';
 
 const app = express();
-import { FacebookPublisher } from './facebook-publisher.js';
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serverless environments require Memory Storage for Multer
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(process.cwd(), 'public')));
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// Serve index.html on root route
+app.get('/', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -34,7 +42,6 @@ app.get('/api/defaults', (req, res) => {
     });
 });
 
-// Sync tokens endpoint
 app.post('/api/update-tokens', (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
@@ -52,7 +59,6 @@ app.post('/api/update-tokens', (req, res) => {
     }
 });
 
-// Account info endpoint
 app.post('/api/account-info', async (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
@@ -72,11 +78,7 @@ app.post('/api/account-info', async (req, res) => {
     }
 });
 
-// Publishing Endpoint
 app.post('/publish', upload.single('imageFile'), async (req, res) => {
-    const originalLog = console.log;
-    const originalError = console.error;
-
     try {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
@@ -101,15 +103,6 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
             return res.end();
         }
 
-        console.log = (...args) => {
-            res.write(args.join(' ') + '\n');
-            originalLog(...args);
-        };
-        console.error = (...args) => {
-            res.write('❌ ' + args.join(' ') + '\n');
-            originalError(...args);
-        };
-
         const publisher = new FacebookPublisher({
             accessToken,
             accessToken2,
@@ -118,7 +111,6 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
             pageId
         });
 
-        // Pass file buffer directly if available
         const imageBuffer = req.file ? req.file.buffer : null;
 
         const result = await publisher.publishToFacebook(
@@ -134,11 +126,8 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
     } catch (error) {
         res.write(`\n💥 Publishing failed: ${error.message}\n`);
     } finally {
-        console.log = originalLog;
-        console.error = originalError;
         res.end();
     }
 });
 
-// Export default Express handler for Vercel
 export default app;
