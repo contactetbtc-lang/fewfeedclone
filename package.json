@@ -4,9 +4,11 @@
   "description": "Facebook Auto Publisher App",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
