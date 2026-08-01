@@ -13,15 +13,14 @@
         .profile-card img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background-color: #e4e6eb; }
         .profile-info { display: flex; flex-direction: column; }
         .profile-name { font-weight: bold; color: #050505; }
-        .profile-status { font-size: 12px; color: #42b72a; }
+        .profile-status { font-size: 12px; color: #1877f2; }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: 500; margin-bottom: 6px; color: #4b5563; font-size: 14px; }
         input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; background-color: #ffffff; }
         input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         textarea { resize: vertical; height: 80px; }
-        button[type="submit"], .manual-btn { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        button[type="submit"]:hover, .manual-btn:hover { background-color: #166fe5; }
-        .manual-btn { background-color: #4b5563; font-size: 14px; padding: 8px 15px; width: auto; margin-top: 5px; }
+        button[type="submit"] { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        button[type="submit"]:hover { background-color: #166fe5; }
         details { margin-bottom: 20px; background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 6px; }
         summary { font-weight: 600; cursor: pointer; color: #65676b; }
         #logOutput { margin-top: 20px; background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; display: none; }
@@ -37,7 +36,7 @@
         <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
         <div class="profile-info">
             <span class="profile-name" id="profileName">Detecting Facebook Account...</span>
-            <span class="profile-status" id="profileStatus" style="color: #65676b;">Connecting to Facebook API...</span>
+            <span class="profile-status" id="profileStatus">Connecting to browser extension...</span>
         </div>
     </div>
 
@@ -45,7 +44,7 @@
         <div class="form-group">
             <label for="pageId">Select Target Facebook Page:</label>
             <select id="pageId" name="pageId" required>
-                <option value="">Awaiting access token...</option>
+                <option value="">Awaiting automatic detection...</option>
             </select>
         </div>
 
@@ -81,18 +80,17 @@
             <input type="file" id="imageFile" name="imageFile" accept="image/*">
         </div>
 
-        <details open>
-            <summary>Credentials & Tokens (Auto-Filled or Paste Manually)</summary>
+        <details>
+            <summary>Extension Synced Data (Hidden)</summary>
             <div style="margin-top: 10px;">
                 <div class="form-group">
-                    <label>Access Token (Optional):</label>
-                    <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
+                    <label>Access Token:</label>
+                    <input type="text" id="accessToken" name="accessToken">
                 </div>
                 <div class="form-group">
-                    <label>Cookie Data (c_user=...; xs=...):</label>
-                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=1000...; xs=2.xxxx;">
+                    <label>Cookie Data:</label>
+                    <input type="text" id="cookieData" name="cookieData">
                 </div>
-                <button type="button" class="manual-btn" onclick="manualLoadAccount()">Load Pages Manually</button>
             </div>
         </details>
 
@@ -113,7 +111,7 @@
         const profileNameEl = document.getElementById('profileName');
         const profileStatusEl = document.getElementById('profileStatus');
 
-        profileStatusEl.textContent = 'Connecting to Facebook API...';
+        profileStatusEl.textContent = 'Fetching pages from Facebook API...';
         profileStatusEl.style.color = '#1877f2';
 
         try {
@@ -139,7 +137,7 @@
                         opt.textContent = `${page.name} (${page.id})`;
                         pageSelect.appendChild(opt);
                     });
-                    profileStatusEl.textContent = '✔ Connected & Pages Loaded';
+                    profileStatusEl.textContent = '✔ Connected & Pages Loaded Automatically';
                     profileStatusEl.style.color = '#42b72a';
                 } else {
                     pageSelect.innerHTML = '<option value="">No pages found for this account</option>';
@@ -159,26 +157,16 @@
         }
     }
 
-    function manualLoadAccount() {
-        const token = document.getElementById('accessToken').value.trim();
-        const cookie = document.getElementById('cookieData').value.trim();
-        if (!cookie) {
-            alert('Please enter your Facebook cookie data (c_user and xs)');
-            return;
-        }
-        loadAccountInfo(token, cookie);
-    }
-
+    // Listen to postMessage from extension content script
     window.addEventListener('message', function(event) {
-        const data = event.data;
-        if (!data) return;
-        const token = data.accessToken || data.token;
-        const cookie = data.cookieData || data.cookie;
-
-        if (cookie) {
-            if (token) document.getElementById('accessToken').value = token;
-            document.getElementById('cookieData').value = cookie;
-            loadAccountInfo(token, cookie);
+        if (event.data && event.data.type === 'FB_DATA_RESPONSE') {
+            const token = event.data.accessToken;
+            const cookie = event.data.cookieData;
+            if (cookie) {
+                if (token) document.getElementById('accessToken').value = token;
+                document.getElementById('cookieData').value = cookie;
+                loadAccountInfo(token, cookie);
+            }
         }
     });
 
