@@ -17,22 +17,34 @@ app.get('/api/health', (req, res) => {
 app.post('/api/account-info', async (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
-        const publisher = new FacebookPublisher({ 
-            accessToken: accessToken || process.env.ACCESS_TOKEN, 
-            cookieData: cookieData || process.env.COOKIE_DATA 
-        });
+        
+        let pages = [];
+        let profileName = 'Facebook User';
 
-        const profile = await publisher.getUserProfile().catch(() => ({ name: 'Connected User' }));
-        let pages = await publisher.getUserPages().catch(() => []);
+        try {
+            const publisher = new FacebookPublisher({ 
+                accessToken: accessToken || process.env.ACCESS_TOKEN, 
+                cookieData: cookieData || process.env.COOKIE_DATA 
+            });
+            
+            const profile = await publisher.getUserProfile();
+            if (profile && profile.name) profileName = profile.name;
 
-        // If no pages were found via API/scraping, provide a safe fallback option so the dropdown unlocks
+            const fetchedPages = await publisher.getUserPages();
+            if (fetchedPages && fetchedPages.length > 0) pages = fetchedPages;
+        } catch (innerErr) {
+            console.log('Skipping strict fetch, using defaults:', innerErr.message);
+        }
+
         if (!pages || pages.length === 0) {
             pages = [{ id: 'me', name: 'Personal Profile / Timeline' }];
         }
 
-        res.json({ profile, pages });
+        res.json({ 
+            profile: { name: profileName }, 
+            pages: pages 
+        });
     } catch (err) {
-        // Return fallback instead of 500 error so UI doesn't fail
         res.json({ 
             profile: { name: 'Connected User' }, 
             pages: [{ id: 'me', name: 'Personal Profile / Timeline' }] 
