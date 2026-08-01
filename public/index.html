@@ -1,304 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Auto-Publisher Tool</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
-        }
-
-        h2 {
-            margin-top: 0;
-            color: #1877f2;
-        }
-
-        .profile-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #f7f8fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e4e6eb;
-        }
-
-        .profile-card img {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .profile-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-name {
-            font-weight: bold;
-            color: #050505;
-        }
-
-        .profile-status {
-            font-size: 12px;
-            color: #42b72a;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #333;
-        }
-
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
-
-        button {
-            background-color: #1877f2;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #166fe5;
-        }
-
-        details {
-            margin-bottom: 20px;
-            background: #fafafa;
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        summary {
-            font-weight: 600;
-            cursor: pointer;
-            color: #65676b;
-        }
-
-        #logOutput {
-            margin-top: 20px;
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 6px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2>Facebook Auto-Publisher Tool</h2>
-
-    <!-- Profile Header -->
-    <div class="profile-card">
-        <img id="profilePic" src="https://via.placeholder.com/45?text=FB" alt="Profile">
-        <div class="profile-info">
-            <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
-            <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or enter token below</span>
-        </div>
-    </div>
-
-    <form id="publishForm">
-        <!-- Target Page Dropdown -->
-        <div class="form-group">
-            <label for="pageId">Select Target Facebook Page:</label>
-            <select id="pageId" name="pageId" required>
-                <option value="">Awaiting access token...</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="linkUrl">Link URL:</label>
-            <input type="text" id="linkUrl" name="linkUrl" required placeholder="https://example.com">
-        </div>
-
-        <div class="form-group">
-            <label for="linkName">Headline Title:</label>
-            <input type="text" id="linkName" name="linkName" required placeholder="Article Title">
-        </div>
-
-        <div class="form-group">
-            <label for="caption">Post Message / Caption:</label>
-            <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="description">Link Description:</label>
-            <input type="text" id="description" name="description" placeholder="Short description">
-        </div>
-
-        <div class="form-group">
-            <label for="callToActionType">Call To Action:</label>
-            <select id="callToActionType" name="callToActionType">
-                <option value="LEARN_MORE">Learn More</option>
-                <option value="SHOP_NOW">Shop Now</option>
-                <option value="SIGN_UP">Sign Up</option>
-                <option value="BOOK_NOW">Book Now</option>
-                <option value="CONTACT_US">Contact Us</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="imageFile">Upload Image:</label>
-            <input type="file" id="imageFile" name="imageFile" accept="image/*">
-        </div>
-
-        <!-- Credentials Panel -->
-        <details open>
-            <summary>Credentials & Tokens (Auto-Filled by Extension)</summary>
-            <div style="margin-top: 10px;">
-                <div class="form-group">
-                    <label>Access Token:</label>
-                    <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
-                </div>
-                <div class="form-group">
-                    <label>Access Token 2:</label>
-                    <input type="text" id="accessToken2" name="accessToken2" placeholder="Secondary Token">
-                </div>
-                <div class="form-group">
-                    <label>Cookie Data:</label>
-                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=...; xs=...">
-                </div>
-                <div class="form-group">
-                    <label>Ad Account ID:</label>
-                    <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
-                </div>
-            </div>
-        </details>
-
-        <button type="submit" id="submitBtn">Publish Post</button>
-    </form>
-
-    <div id="logOutput"></div>
-</div>
-
 <script>
     let isFetchingAccount = false;
 
-    // Fetch account info and pages whenever an access token is provided
+    // Direct Graph API Client Fallback to fetch Profile & Pages
     async function loadAccountInfo(token, cookie, targetPageId) {
         if (!token || isFetchingAccount) return;
         isFetchingAccount = true;
 
-        document.getElementById('profileName').textContent = 'Connecting to Facebook...';
-        document.getElementById('profileStatus').textContent = 'Fetching profile and managed pages...';
-        document.getElementById('profileStatus').style.color = '#1877f2';
+        const profileNameEl = document.getElementById('profileName');
+        const profileStatusEl = document.getElementById('profileStatus');
+        const profilePicEl = document.getElementById('profilePic');
+        const pageSelect = document.getElementById('pageId');
 
+        profileNameEl.textContent = 'Loading profile...';
+        profileStatusEl.textContent = 'Fetching account details...';
+        profileStatusEl.style.color = '#1877f2';
+
+        let userProfile = null;
+        let pagesList = [];
+
+        // 1. Try fetching via Vercel Backend API route first
         try {
             const infoRes = await fetch('/api/account-info', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ accessToken: token, cookieData: cookie })
             });
-
             const accountData = await infoRes.json();
-
-            if (accountData.profile) {
-                document.getElementById('profileName').textContent = accountData.profile.name || 'Facebook User';
-                document.getElementById('profileStatus').textContent = '✔ Account Connected via Extension';
-                document.getElementById('profileStatus').style.color = '#42b72a';
-                if (accountData.profile.picture?.data?.url) {
-                    document.getElementById('profilePic').src = accountData.profile.picture.data.url;
-                }
-            } else {
-                document.getElementById('profileName').textContent = 'Connected (Token Active)';
-                document.getElementById('profileStatus').textContent = '✔ Ready';
-                document.getElementById('profileStatus').style.color = '#42b72a';
-            }
-
-            const pageSelect = document.getElementById('pageId');
-            pageSelect.innerHTML = '';
-
-            if (accountData.pages && accountData.pages.length > 0) {
-                accountData.pages.forEach(page => {
-                    const option = document.createElement('option');
-                    option.value = page.id;
-                    option.textContent = `${page.name} (${page.id})`;
-                    if (targetPageId && page.id === targetPageId) {
-                        option.selected = true;
-                    }
-                    pageSelect.appendChild(option);
-                });
-            } else if (targetPageId) {
-                const option = document.createElement('option');
-                option.value = targetPageId;
-                option.textContent = `Page (${targetPageId})`;
-                option.selected = true;
-                pageSelect.appendChild(option);
-            } else {
-                pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
-            }
+            if (accountData.profile) userProfile = accountData.profile;
+            if (accountData.pages && accountData.pages.length > 0) pagesList = accountData.pages;
         } catch (err) {
-            console.error('Failed to load account info:', err);
-            document.getElementById('profileName').textContent = 'Connection Error';
-            document.getElementById('profileStatus').textContent = 'Check token validity';
-            document.getElementById('profileStatus').style.color = '#fa3e3e';
-        } finally {
-            isFetchingAccount = false;
+            console.warn('Backend API fetch skipped/failed, trying direct Graph API...', err);
         }
+
+        // 2. Direct Graph API Fallback for Profile
+        if (!userProfile) {
+            try {
+                const profileRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name,picture.type(large)&access_token=${token}`);
+                const profileData = await profileRes.json();
+                if (profileData.name) {
+                    userProfile = {
+                        name: profileData.name,
+                        picture: profileData.picture
+                    };
+                }
+            } catch (err) {
+                console.error('Direct Graph API profile error:', err);
+            }
+        }
+
+        // Update Profile Header UI
+        if (userProfile) {
+            profileNameEl.textContent = userProfile.name;
+            profileStatusEl.textContent = '✔ Account Connected';
+            profileStatusEl.style.color = '#42b72a';
+            if (userProfile.picture?.data?.url) {
+                profilePicEl.src = userProfile.picture.data.url;
+            }
+        } else {
+            profileNameEl.textContent = 'Connected Facebook User';
+            profileStatusEl.textContent = '✔ Token Active';
+            profileStatusEl.style.color = '#42b72a';
+        }
+
+        // 3. Direct Graph API Fallback for Pages
+        if (pagesList.length === 0) {
+            try {
+                const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=${token}`);
+                const pagesData = await pagesRes.json();
+                if (pagesData.data && pagesData.data.length > 0) {
+                    pagesList = pagesData.data;
+                }
+            } catch (err) {
+                console.error('Direct Graph API pages error:', err);
+            }
+        }
+
+        // Populate Pages Dropdown UI
+        pageSelect.innerHTML = '';
+        if (pagesList.length > 0) {
+            pagesList.forEach(page => {
+                const option = document.createElement('option');
+                option.value = page.id;
+                option.textContent = `${page.name} (${page.id})`;
+                if (targetPageId && page.id === targetPageId) option.selected = true;
+                pageSelect.appendChild(option);
+            });
+        } else {
+            pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
+        }
+
+        isFetchingAccount = false;
     }
 
-    // Expose global function for content-vercel.js extension script
+    // Handshake function called by Extension
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
         loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Listen for manual typing or extension input events on accessToken field
+    // Auto-trigger when access token is populated
     document.getElementById('accessToken').addEventListener('input', (e) => {
         const token = e.target.value.trim();
         const cookie = document.getElementById('cookieData').value.trim();
@@ -307,32 +108,9 @@
         }
     });
 
-    // Initial load from Vercel defaults (if any are set)
-    async function loadDefaults() {
-        try {
-            const res = await fetch('/api/defaults');
-            if (!res.ok) return;
-            const defaults = await res.json();
-
-            if (defaults.linkUrl) document.getElementById('linkUrl').value = defaults.linkUrl;
-            if (defaults.linkName) document.getElementById('linkName').value = defaults.linkName;
-            if (defaults.caption) document.getElementById('caption').value = defaults.caption;
-            if (defaults.description) document.getElementById('description').value = defaults.description;
-
-            if (defaults.accessToken) {
-                document.getElementById('accessToken').value = defaults.accessToken;
-                if (defaults.cookieData) document.getElementById('cookieData').value = defaults.cookieData;
-                loadAccountInfo(defaults.accessToken, defaults.cookieData, defaults.pageId);
-            }
-        } catch (err) {
-            console.warn('Could not load defaults:', err);
-        }
-    }
-
-    // Form Submit Handler
+    // Handle Form Submit
     document.getElementById('publishForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const submitBtn = document.getElementById('submitBtn');
         const logOutput = document.getElementById('logOutput');
         
@@ -365,8 +143,4 @@
             submitBtn.innerText = 'Publish Post';
         }
     });
-
-    loadDefaults();
 </script>
-</body>
-</html>
