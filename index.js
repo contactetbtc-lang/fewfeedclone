@@ -1,23 +1,23 @@
 const express = require('express');
 const path = require('path');
-const publisherHandler = require('./api/facebook-publisher');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Serve static frontend files from /public
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Route publish requests
-app.all('/publish', publisherHandler);
-app.all('/api/publish', publisherHandler);
+// Mount the API router
+const apiRouter = require('./api/index');
+app.use('/', apiRouter);
 
-// Fallback route for static web app
+// Fallback route
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-if (process.env.NODE_ENV !== 'test') {
+// Only listen locally if not running on Vercel serverless
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
