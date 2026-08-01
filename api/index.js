@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { FacebookPublisher } = require('./facebook-publisher');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -17,25 +16,24 @@ app.get('/api/health', (req, res) => {
 app.post('/api/account-info', async (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
-        
+        let token = accessToken || process.env.ACCESS_TOKEN;
         let pages = [];
         let profileName = 'Facebook User';
 
-        try {
-            const publisher = new FacebookPublisher({ 
-                accessToken: accessToken || process.env.ACCESS_TOKEN, 
-                cookieData: cookieData || process.env.COOKIE_DATA 
-            });
-            
-            const profile = await publisher.getUserProfile();
-            if (profile && profile.name) profileName = profile.name;
+        // Try to fetch via Graph API if token exists
+        if (token) {
+            try {
+                const meRes = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${token}`);
+                const meData = await meRes.json();
+                if (meData && meData.name) profileName = meData.name;
 
-            const fetchedPages = await publisher.getUserPages();
-            if (fetchedPages && fetchedPages.length > 0) pages = fetchedPages;
-        } catch (innerErr) {
-            console.log('Skipping strict fetch, using defaults:', innerErr.message);
+                const pagesRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
+                const pagesData = await pagesRes.json();
+                if (pagesData && pagesData.data) pages = pagesData.data;
+            } catch (e) {}
         }
 
+        // Fallback or default pages so UI never breaks
         if (!pages || pages.length === 0) {
             pages = [{ id: 'me', name: 'Personal Profile / Timeline' }];
         }
@@ -60,22 +58,32 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
 
     try {
         log('🚀 Initializing Facebook Publisher...');
-        const { pageId, caption, linkName, linkUrl, callToActionType, accessToken, cookieData } = req.body;
+        const { pageId, caption, linkName, linkUrl, callToActionType, accessToken } = req.body;
+        const token = accessToken || process.env.ACCESS_TOKEN;
 
-        const publisher = new FacebookPublisher({
-            accessToken: accessToken || process.env.ACCESS_TOKEN,
-            cookieData: cookieData || process.env.COOKIE_DATA
-        });
+        if (!token) {
+            throw new Error('Access token is missing.');
+        }
 
         log('📤 Preparing post content...');
-        const result = await publisher.publishPost({
-            pageId,
-            caption,
-            linkName,
-            linkUrl,
-            callToActionType: callToActionType || 'LEARN_MORE',
-            imageFile: req.file
+        const formData = new URLSearchParams();
+        formData.append('message', caption || '');
+        if (linkUrl) formData.append('link', linkUrl);
+        if (linkName) formData.append('name', linkName);
+        if (callToActionType) {
+            formData.append('call_to_action', JSON.stringify({ type: callToActionType, value: { link: linkUrl } }));
+        }
+        formData.append('access_token', token);
+
+        const fbRes = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
+            method: 'POST',
+            body: formData
         });
+
+        const result = await fbRes.json();
+        if (result.error) {
+            throw new Error(result.error.message);
+        }
 
         log('✅ Post published successfully!');
         log(JSON.stringify(result, null, 2));
