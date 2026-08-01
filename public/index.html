@@ -308,18 +308,20 @@
             }
         }
 
-        // Populate Pages Dropdown
-        pageSelect.innerHTML = '';
-        if (pagesList.length > 0) {
-            pagesList.forEach(function(page) {
-                const option = document.createElement('option');
-                option.value = page.id;
-                option.textContent = page.name + ' (' + page.id + ')';
-                if (targetPageId && page.id === targetPageId) option.selected = true;
-                pageSelect.appendChild(option);
-            });
-        } else {
-            pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
+        // Populate Pages Dropdown (Guarded so Extension injected data isn't wiped out)
+        if (pageSelect.getAttribute('data-loaded-by-ext') !== 'true') {
+            pageSelect.innerHTML = '';
+            if (pagesList.length > 0) {
+                pagesList.forEach(function(page) {
+                    const option = document.createElement('option');
+                    option.value = page.id;
+                    option.textContent = page.name + ' (' + page.id + ')';
+                    if (targetPageId && page.id === targetPageId) option.selected = true;
+                    pageSelect.appendChild(option);
+                });
+            } else {
+                pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
+            }
         }
 
         isFetchingAccount = false;
