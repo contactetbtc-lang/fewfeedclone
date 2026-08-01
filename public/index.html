@@ -146,8 +146,8 @@
     <div class="profile-card">
         <img id="profilePic" src="https://via.placeholder.com/45?text=FB" alt="Profile">
         <div class="profile-info">
-            <span class="profile-name" id="profileName">Loading Facebook Account...</span>
-            <span class="profile-status" id="profileStatus">Connecting...</span>
+            <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
+            <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or enter token below</span>
         </div>
     </div>
 
@@ -156,7 +156,7 @@
         <div class="form-group">
             <label for="pageId">Select Target Facebook Page:</label>
             <select id="pageId" name="pageId" required>
-                <option value="">Fetching managed pages...</option>
+                <option value="">Awaiting access token...</option>
             </select>
         </div>
 
@@ -196,9 +196,9 @@
             <input type="file" id="imageFile" name="imageFile" accept="image/*">
         </div>
 
-        <!-- Hidden / Extension Populated Fields -->
-        <details>
-            <summary>Advanced Credentials (Auto-Filled by Extension)</summary>
+        <!-- Credentials Panel -->
+        <details open>
+            <summary>Credentials & Tokens (Auto-Filled by Extension)</summary>
             <div style="margin-top: 10px;">
                 <div class="form-group">
                     <label>Access Token:</label>
@@ -226,8 +226,17 @@
 </div>
 
 <script>
-    // Called by Extension or Page Load to load profile and pages
-    window.fetchAccountInfoFromExtension = async function(token, cookie, targetPageId) {
+    let isFetchingAccount = false;
+
+    // Fetch account info and pages whenever an access token is provided
+    async function loadAccountInfo(token, cookie, targetPageId) {
+        if (!token || isFetchingAccount) return;
+        isFetchingAccount = true;
+
+        document.getElementById('profileName').textContent = 'Connecting to Facebook...';
+        document.getElementById('profileStatus').textContent = 'Fetching profile and managed pages...';
+        document.getElementById('profileStatus').style.color = '#1877f2';
+
         try {
             const infoRes = await fetch('/api/account-info', {
                 method: 'POST',
@@ -239,10 +248,15 @@
 
             if (accountData.profile) {
                 document.getElementById('profileName').textContent = accountData.profile.name || 'Facebook User';
-                document.getElementById('profileStatus').textContent = '✔ Authenticated via Extension';
+                document.getElementById('profileStatus').textContent = '✔ Account Connected via Extension';
+                document.getElementById('profileStatus').style.color = '#42b72a';
                 if (accountData.profile.picture?.data?.url) {
                     document.getElementById('profilePic').src = accountData.profile.picture.data.url;
                 }
+            } else {
+                document.getElementById('profileName').textContent = 'Connected (Token Active)';
+                document.getElementById('profileStatus').textContent = '✔ Ready';
+                document.getElementById('profileStatus').style.color = '#42b72a';
             }
 
             const pageSelect = document.getElementById('pageId');
@@ -264,13 +278,36 @@
                 option.textContent = `Page (${targetPageId})`;
                 option.selected = true;
                 pageSelect.appendChild(option);
+            } else {
+                pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
             }
         } catch (err) {
             console.error('Failed to load account info:', err);
+            document.getElementById('profileName').textContent = 'Connection Error';
+            document.getElementById('profileStatus').textContent = 'Check token validity';
+            document.getElementById('profileStatus').style.color = '#fa3e3e';
+        } finally {
+            isFetchingAccount = false;
         }
+    }
+
+    // Expose global function for content-vercel.js extension script
+    window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
+        if (token) document.getElementById('accessToken').value = token;
+        if (cookie) document.getElementById('cookieData').value = cookie;
+        loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Load defaults on page initialization
+    // Listen for manual typing or extension input events on accessToken field
+    document.getElementById('accessToken').addEventListener('input', (e) => {
+        const token = e.target.value.trim();
+        const cookie = document.getElementById('cookieData').value.trim();
+        if (token.length > 20) {
+            loadAccountInfo(token, cookie);
+        }
+    });
+
+    // Initial load from Vercel defaults (if any are set)
     async function loadDefaults() {
         try {
             const res = await fetch('/api/defaults');
@@ -282,16 +319,17 @@
             if (defaults.caption) document.getElementById('caption').value = defaults.caption;
             if (defaults.description) document.getElementById('description').value = defaults.description;
 
-            // Run backend lookup using environment defaults if extension isn't loaded
             if (defaults.accessToken) {
-                window.fetchAccountInfoFromExtension(defaults.accessToken, defaults.cookieData, defaults.pageId);
+                document.getElementById('accessToken').value = defaults.accessToken;
+                if (defaults.cookieData) document.getElementById('cookieData').value = defaults.cookieData;
+                loadAccountInfo(defaults.accessToken, defaults.cookieData, defaults.pageId);
             }
         } catch (err) {
-            console.warn('Could not load environment defaults:', err);
+            console.warn('Could not load defaults:', err);
         }
     }
 
-    // Submit handler
+    // Form Submit Handler
     document.getElementById('publishForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
