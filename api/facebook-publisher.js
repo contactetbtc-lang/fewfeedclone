@@ -1,93 +1,78 @@
-export class FacebookPublisher {
-    constructor(config = {}) {
-        this.accessToken = config.accessToken || '';
-        this.accessToken2 = config.accessToken2 || '';
-        this.cookieData = config.cookieData || '';
-        this.adAccountId = config.adAccountId || '';
-        this.pageId = config.pageId || '';
-    }
+const express = require('express');
+const multer = require('multer');
+const fetch = require('node-fetch');
 
-    /**
-     * Fetch user profile data from Graph API
-     */
-    async getUserProfile() {
-        if (!this.accessToken) {
-            throw new Error('Access token required for profile lookup.');
+const router = express.Router();
+const upload = multer(); // Memory storage for uploaded image files
+
+router.post('/publish', upload.single('imageFile'), async (req, res) => {
+    // Enable streaming plain-text updates back to the client console
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    res.write('🔄 Server received publish request...\n');
+
+    try {
+        const {
+            pageId,
+            accessToken,
+            linkUrl,
+            linkName,
+            caption,         // Post Message / Text
+            displayLink,     // Show display link (Basic +)
+            description,     // Link Description
+            callToActionType
+        } = req.body;
+
+        if (!pageId || !accessToken) {
+            res.write('💥 Error: Missing required Page ID or Access Token.\n');
+            return res.end();
         }
 
-        const url = `https://graph.facebook.com/v19.0/me?access_token=${this.accessToken}`;
-        const response = await fetch(url);
-        const data = await response.json();
+        // 1. Prepare base payload parameters for Facebook Graph API
+        const params = new URLSearchParams();
+        params.append('access_token', accessToken);
 
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
+        if (linkUrl) params.append('link', linkUrl);
+        if (caption) params.append('message', caption);
+        if (linkName) params.append('name', linkName);
+        if (displayLink) params.append('caption', displayLink); // 'Show display link' maps to FB 'caption'
+        if (description) params.append('description', description);
 
-        return data;
-    }
-
-    /**
-     * Fetch pages managed by the user
-     */
-    async getUserPages() {
-        if (!this.accessToken) {
-            throw new Error('Access token required for pages lookup.');
-        }
-
-        const url = `https://graph.facebook.com/v19.0/me/accounts?access_token=${this.accessToken}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        return data.data || [];
-    }
-
-    /**
-     * Publish a post with link and optional image/text payload
-     */
-    async publishToFacebook(imageBuffer, linkUrl, linkName, caption, description, callToActionType) {
-        if (!this.accessToken || !this.pageId) {
-            throw new Error('Access Token and Page ID are required to publish.');
-        }
-
-        // Endpoint for Page Posts
-        const url = `https://graph.facebook.com/v19.0/${this.pageId}/feed`;
-
-        const payload = {
-            access_token: this.accessToken,
-            link: linkUrl,
-            message: caption || '',
-            name: linkName || '',
-            description: description || ''
-        };
-
-        if (callToActionType) {
-            payload.call_to_action = JSON.stringify({
+        // 2. Safely attach Call-To-Action ONLY if selected and NOT "NO_BUTTON"
+        if (callToActionType && callToActionType !== 'NO_BUTTON') {
+            const ctaObject = {
                 type: callToActionType,
-                value: { link: linkUrl }
-            });
+                value: {
+                    link: linkUrl
+                }
+            };
+            params.append('call_to_action', JSON.stringify(ctaObject));
         }
 
-        const response = await fetch(url, {
+        res.write(`📡 Connecting to Facebook Page ID: ${pageId}...\n`);
+
+        // 3. Send Request to Facebook Graph API
+        const fbResponse = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
+            body: params
         });
 
-        const data = await response.json();
+        const fbData = await fbResponse.json();
 
-        if (data.error) {
-            throw new Error(data.error.message);
+        if (fbData.error) {
+            res.write(`💥 Facebook API Error: ${fbData.error.message}\n`);
+        } else if (fbData.id) {
+            res.write(`✅ Post successfully published! ID: ${fbData.id}\n`);
+        } else {
+            res.write(`⚠️ Unexpected response: ${JSON.stringify(fbData)}\n`);
         }
 
-        return {
-            id: data.id,
-            url: `https://facebook.com/${data.id}`
-        };
+    } catch (error) {
+        res.write(`💥 Publishing failed: ${error.message}\n`);
+    } finally {
+        res.end();
     }
-}
+});
+
+module.exports = router;
