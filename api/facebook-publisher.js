@@ -1,18 +1,38 @@
-const express = require('express');
 const multer = require('multer');
 const fetch = require('node-fetch');
 
-const router = express.Router();
-const upload = multer(); // Memory storage for uploaded image files
+// Configure Multer for Vercel serverless memory handling
+const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/publish', upload.single('imageFile'), async (req, res) => {
-    // Enable streaming plain-text updates back to the client console
+// Helper function to run Multer middleware in Vercel Serverless
+function runMiddleware(req, res, fn) {
+    return new Promise((resolve, reject) => {
+        fn(req, res, (result) => {
+            if (result instanceof Error) {
+                return reject(result);
+            }
+            return resolve(result);
+        });
+    });
+}
+
+// Vercel Serverless Default Handler
+module.exports = async function handler(req, res) {
+    if (req.method !== 'POST') {
+        res.status(405).send('Method Not Allowed');
+        return;
+    }
+
+    // Set streaming headers
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
     res.write('🔄 Server received publish request...\n');
 
     try {
+        // Run multer to parse form-data body
+        await runMiddleware(req, res, upload.single('imageFile'));
+
         const {
             pageId,
             accessToken,
@@ -22,7 +42,7 @@ router.post('/publish', upload.single('imageFile'), async (req, res) => {
             displayLink,     // Show display link (Basic +)
             description,     // Link Description
             callToActionType
-        } = req.body;
+        } = req.body || {};
 
         if (!pageId || !accessToken) {
             res.write('💥 Error: Missing required Page ID or Access Token.\n');
@@ -73,6 +93,11 @@ router.post('/publish', upload.single('imageFile'), async (req, res) => {
     } finally {
         res.end();
     }
-});
+};
 
-module.exports = router;
+// Disable Vercel's default bodyParser so Multer can parse multipart form-data
+module.exports.config = {
+    api: {
+        bodyParser: false,
+    },
+};

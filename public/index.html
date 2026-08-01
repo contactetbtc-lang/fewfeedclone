@@ -176,7 +176,7 @@
             <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
         </div>
 
-        <!-- Call To Action Dropdown matching Image 2 -->
+        <!-- Call To Action Dropdown -->
         <div class="form-group">
             <label for="callToActionType">Card Buttons / Call To Action:</label>
             <select id="callToActionType" name="callToActionType">
@@ -259,6 +259,7 @@
     async function loadAccountInfo(token, cookie, targetPageId) {
         const pageSelect = document.getElementById('pageId');
         
+        // Anti-flicker guard: Skip if extension already populated the dropdown
         if (pageSelect && pageSelect.getAttribute('data-loaded-by-ext') === 'true') {
             return;
         }
@@ -334,6 +335,12 @@
         logOutput.textContent = '🚀 Submitting publish request...\n';
 
         const formData = new FormData(e.target);
+
+        // PREVENT INVALID REQUEST: Remove NO_BUTTON option before sending to FB Graph API
+        const ctaType = formData.get('callToActionType');
+        if (!ctaType || ctaType === 'NO_BUTTON') {
+            formData.delete('callToActionType');
+        }
 
         try {
             const response = await fetch('/publish', {
