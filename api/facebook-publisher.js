@@ -1,10 +1,9 @@
 const multer = require('multer');
-const fetch = require('node-fetch');
 
-// Configure Multer for Vercel serverless memory handling
+// Configure Multer for memory-only storage in serverless environments
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper function to run Multer middleware in Vercel Serverless
+// Helper to run middleware in serverless environment
 function runMiddleware(req, res, fn) {
     return new Promise((resolve, reject) => {
         fn(req, res, (result) => {
@@ -16,21 +15,21 @@ function runMiddleware(req, res, fn) {
     });
 }
 
-// Vercel Serverless Default Handler
 module.exports = async function handler(req, res) {
+    // Only allow POST requests
     if (req.method !== 'POST') {
-        res.status(405).send('Method Not Allowed');
+        res.status(405).json({ error: 'Method Not Allowed' });
         return;
     }
 
-    // Set streaming headers
+    // Set chunked streaming headers for live log console
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
     res.write('🔄 Server received publish request...\n');
 
     try {
-        // Run multer to parse form-data body
+        // Parse multipart/form-data
         await runMiddleware(req, res, upload.single('imageFile'));
 
         const {
@@ -49,7 +48,7 @@ module.exports = async function handler(req, res) {
             return res.end();
         }
 
-        // 1. Prepare base payload parameters for Facebook Graph API
+        // 1. Construct Facebook API Parameters
         const params = new URLSearchParams();
         params.append('access_token', accessToken);
 
@@ -59,7 +58,7 @@ module.exports = async function handler(req, res) {
         if (displayLink) params.append('caption', displayLink); // 'Show display link' maps to FB 'caption'
         if (description) params.append('description', description);
 
-        // 2. Safely attach Call-To-Action ONLY if selected and NOT "NO_BUTTON"
+        // 2. Attach Call-To-Action ONLY if not "NO_BUTTON"
         if (callToActionType && callToActionType !== 'NO_BUTTON') {
             const ctaObject = {
                 type: callToActionType,
@@ -72,7 +71,7 @@ module.exports = async function handler(req, res) {
 
         res.write(`📡 Connecting to Facebook Page ID: ${pageId}...\n`);
 
-        // 3. Send Request to Facebook Graph API
+        // 3. Send payload to Facebook using native global fetch
         const fbResponse = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
             method: 'POST',
             body: params
@@ -95,7 +94,7 @@ module.exports = async function handler(req, res) {
     }
 };
 
-// Disable Vercel's default bodyParser so Multer can parse multipart form-data
+// Disable standard bodyParser to let Multer handle file uploads
 module.exports.config = {
     api: {
         bodyParser: false,
