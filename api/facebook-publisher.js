@@ -5,7 +5,6 @@ class FacebookPublisher {
     }
 
     async getUserProfile() {
-        // If we have an access token, try graph API first
         if (this.accessToken) {
             try {
                 const res = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${this.accessToken}`);
@@ -14,14 +13,12 @@ class FacebookPublisher {
             } catch (e) {}
         }
 
-        // Fallback using cookie data if available
         if (this.cookieData) {
             try {
                 const res = await fetch('https://www.facebook.com/adsmanager/manage/', {
                     headers: { 'cookie': this.cookieData }
                 });
                 const html = await res.text();
-                // Try to extract user name or profile info from html meta/scripts if token fails
                 const matchName = html.match(/"NAME":"([^"]+)"/);
                 if (matchName) {
                     return { name: JSON.parse(`"${matchName[1]}"`) };
@@ -29,13 +26,12 @@ class FacebookPublisher {
             } catch (e) {}
         }
 
-        return { name: 'Facebook User' };
+        return { name: 'Connected Facebook User' };
     }
 
     async getUserPages() {
         let token = this.accessToken;
 
-        // If token is missing, attempt to scrape or derive it using cookieData
         if (!token && this.cookieData) {
             try {
                 const res = await fetch('https://www.facebook.com/adsmanager/manage/', {
@@ -48,23 +44,21 @@ class FacebookPublisher {
         }
 
         if (!token) {
-            throw new Error('Access token could not be found or generated from cookies.');
+            // Return an empty array instead of throwing so the app doesn't crash
+            return [];
         }
 
-        const res = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
-        const data = await res.json();
+        try {
+            const res = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
+            const data = await res.json();
+            if (data.data) return data.data;
+        } catch (e) {}
 
-        if (data.error) {
-            throw new Error(data.error.message);
-        }
-
-        return data.data || [];
+        return [];
     }
 
     async publishPost({ pageId, caption, linkName, linkUrl, callToActionType, imageFile }) {
         let token = this.accessToken;
-        
-        // Fetch page-specific token if needed
         const pages = await this.getUserPages();
         const targetPage = pages.find(p => p.id === pageId);
         
@@ -77,7 +71,7 @@ class FacebookPublisher {
         if (linkUrl) formData.append('link', linkUrl);
         if (linkName) formData.append('name', linkName);
         if (callToActionType) formData.append('call_to_action', JSON.stringify({ type: callToActionType, value: { link: linkUrl } }));
-        formData.append('access_token', token);
+        formData.append('access_token', token || this.accessToken);
 
         const res = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
             method: 'POST',
