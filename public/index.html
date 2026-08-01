@@ -6,7 +6,7 @@
     <title>Facebook Auto-Publisher Tool</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
@@ -23,7 +23,10 @@
             width: 100%;
         }
 
-        h2 { color: #1877f2; margin-top: 0; }
+        h2 {
+            color: #1877f2;
+            margin-top: 0;
+        }
 
         .profile-card {
             background: #f7f8fa;
@@ -37,28 +40,25 @@
         }
 
         .profile-card img {
-            width: 42px;
-            height: 42px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background-color: #ddd;
+            background-color: #ccc;
         }
 
-        .status-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: #fff3cd;
-            color: #856404;
-            display: inline-block;
-            margin-top: 4px;
+        .profile-info strong {
+            display: block;
+            color: #1c1e21;
         }
 
-        .status-badge.success {
-            background: #d4edda;
-            color: #155724;
+        .profile-info span {
+            font-size: 0.85rem;
+            color: #65676b;
         }
 
-        .form-group { margin-bottom: 16px; }
+        .form-group {
+            margin-bottom: 16px;
+        }
 
         label {
             display: block;
@@ -88,6 +88,10 @@
             width: 100%;
         }
 
+        button:hover {
+            background-color: #166fe5;
+        }
+
         .log-console {
             background: #1c1e21;
             color: #00ff66;
@@ -95,7 +99,7 @@
             padding: 12px;
             border-radius: 6px;
             margin-top: 20px;
-            min-height: 60px;
+            min-height: 80px;
             white-space: pre-wrap;
             font-size: 13px;
         }
@@ -106,15 +110,17 @@
     <div class="container">
         <h2>Facebook Auto-Publisher Tool</h2>
 
+        <!-- Facebook Connected Account Card -->
         <div class="profile-card">
             <img id="userAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%23aaa'/%3E%3Cpath d='M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z' fill='%23aaa'/%3E%3C/svg%3E" alt="Profile">
-            <div>
-                <strong id="userName">Awaiting Extension Data...</strong><br>
-                <span id="statusBadge" class="status-badge">⏳ Checking Extension...</span>
+            <div class="profile-info">
+                <strong id="userName" class="user-name">Awaiting Extension Data...</strong>
+                <span id="userSubtext">Log in to Facebook or sync extension</span>
             </div>
         </div>
 
-        <form id="publishForm" action="/publish" method="POST">
+        <!-- Publisher Form -->
+        <form id="publishForm" action="/publish" method="POST" enctype="multipart/form-data">
             <input type="hidden" id="accessToken" name="accessToken" value="">
 
             <div class="form-group">
@@ -129,59 +135,136 @@
                 <textarea id="caption" name="caption" rows="3" placeholder="Write caption..."></textarea>
             </div>
 
+            <div class="form-group">
+                <label for="linkUrl">Link URL:</label>
+                <input type="url" id="linkUrl" name="linkUrl" placeholder="https://example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="linkName">Link Title / Name:</label>
+                <input type="text" id="linkName" name="linkName" placeholder="Link title...">
+            </div>
+
+            <div class="form-group">
+                <label for="displayLink">Display Link (Caption):</label>
+                <input type="text" id="displayLink" name="displayLink" placeholder="example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Link Description:</label>
+                <textarea id="description" name="description" rows="2" placeholder="Link description..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="imageFile">Image Upload:</label>
+                <input type="file" id="imageFile" name="imageFile" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label for="callToActionType">Call To Action Button:</label>
+                <select id="callToActionType" name="callToActionType">
+                    <option value="NO_BUTTON">No Button</option>
+                    <option value="LEARN_MORE">Learn More</option>
+                    <option value="SHOP_NOW">Shop Now</option>
+                    <option value="SIGN_UP">Sign Up</option>
+                    <option value="BOOK_TRAVEL">Book Travel</option>
+                    <option value="LISTEN_NOW">Listen Now</option>
+                </select>
+            </div>
+
             <button type="submit">Publish Post</button>
         </form>
 
-        <div id="logConsole" class="log-console">Console initialized...</div>
+        <!-- Live Streaming Console Logs -->
+        <div id="logConsole" class="log-console">🚀 Console ready for publishing...</div>
     </div>
 
+    <!-- Facebook Extension Sync Listener -->
     <script>
-      window.addEventListener('message', (event) => {
+      window.addEventListener('message', async (event) => {
         if (event.data && event.data.type === 'FB_EXTENSION_SYNC') {
           const res = event.data.payload;
-          const badge = document.getElementById('statusBadge');
-          const userName = document.getElementById('userName');
-          const pageSelect = document.getElementById('pageSelect');
-          const tokenInput = document.getElementById('accessToken');
-
-          if (!res.success) {
-            if (res.reason === 'NO_TOKEN_STORED') {
-              badge.textContent = '⚠️ Please open facebook.com in a new tab first!';
-              badge.className = 'status-badge';
-            } else {
-              badge.textContent = `❌ Error: ${res.reason}`;
-            }
+          
+          if (!res || !res.success) {
+            console.warn('⏳ Facebook Extension:', res?.reason || 'Awaiting connection');
             return;
           }
 
-          // SUCCESS - Populate everything!
-          badge.textContent = '✓ Connected to Facebook';
-          badge.className = 'status-badge success';
-
-          if (res.token) {
-            tokenInput.value = res.token;
-          }
-
-          if (res.user && res.user.name) {
-            userName.textContent = `${res.user.name} (${res.user.id})`;
-            if (res.user.picture?.data?.url) {
-              document.getElementById('userAvatar').src = res.user.picture.data.url;
+          // 1. Automatically update access token hidden input
+          const tokenInputs = document.querySelectorAll('input[name="accessToken"], #accessToken, input[type="hidden"]');
+          tokenInputs.forEach(input => {
+            if (input.name === 'accessToken' || input.id === 'accessToken') {
+              input.value = res.token;
             }
-          }
+          });
 
-          if (res.pages && res.pages.length > 0) {
-            pageSelect.innerHTML = '';
-            res.pages.forEach(page => {
-              const opt = document.createElement('option');
-              opt.value = page.id;
-              opt.textContent = `${page.name} (${page.id})`;
-              pageSelect.appendChild(opt);
-            });
-          } else {
-            pageSelect.innerHTML = '<option value="">No Pages found under this account</option>';
+          // 2. Dynamically populate Page select dropdown
+          const selectElems = document.querySelectorAll('select[name="pageId"], select#pageSelect, select');
+          selectElems.forEach(selectElem => {
+            if (res.pages && res.pages.length > 0) {
+              if (selectElem.options.length === 0 || selectElem.options[0].text.includes('Awaiting')) {
+                selectElem.innerHTML = '';
+                res.pages.forEach(page => {
+                  const opt = document.createElement('option');
+                  opt.value = page.id;
+                  opt.textContent = `${page.name} (${page.id})`;
+                  opt.dataset.pageToken = page.access_token;
+                  selectElem.appendChild(opt);
+                });
+              }
+            }
+          });
+
+          // 3. Update User Profile Name & Avatar
+          if (res.user && res.user.name) {
+            const profileNameElem = document.querySelector('.user-name, #userName, .profile-name');
+            if (profileNameElem) {
+              profileNameElem.textContent = `${res.user.name} (${res.user.id})`;
+            }
+            
+            const avatarElem = document.getElementById('userAvatar');
+            if (avatarElem && res.user.picture?.data?.url) {
+              avatarElem.src = res.user.picture.data.url;
+            }
+
+            const userSubtext = document.getElementById('userSubtext');
+            if (userSubtext) {
+              userSubtext.textContent = '✓ Connected & Synced';
+            }
           }
         }
       });
+
+      // Handle Streaming Server Log Output
+      const form = document.getElementById('publishForm');
+      const logConsole = document.getElementById('logConsole');
+
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          logConsole.textContent = '🚀 Submitting publish request...\n';
+
+          const formData = new FormData(form);
+
+          try {
+            const response = await fetch('/publish', {
+              method: 'POST',
+              body: formData
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              logConsole.textContent += decoder.decode(value, { stream: true });
+            }
+          } catch (err) {
+            logConsole.textContent += `💥 Request Error: ${err.message}\n`;
+          }
+        });
+      }
     </script>
 </body>
 </html>
