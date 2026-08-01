@@ -258,11 +258,10 @@
     let lastProcessedToken = '';
 
     async function loadAccountInfo(token, cookie, targetPageId) {
-        const pageSelect = document.getElementById('pageId');
-        
         if (!token || isFetchingAccount) return;
         isFetchingAccount = true;
 
+        const pageSelect = document.getElementById('pageId');
         const profileNameEl = document.getElementById('profileName');
         const profileStatusEl = document.getElementById('profileStatus');
         const profilePicEl = document.getElementById('profilePic');
@@ -289,7 +288,7 @@
         }
 
         if (userProfile) {
-            profileNameEl.textContent = userProfile.name || 'Facebook User';
+            profileNameEl.textContent = userProfile.name || 'Facebook Account';
             profileStatusEl.textContent = '✔ Account Connected';
             profileStatusEl.style.color = '#42b72a';
             if (userProfile.picture?.data?.url) {
@@ -319,11 +318,20 @@
         isFetchingAccount = false;
     }
 
-    // Auto-Watcher: Triggers automatically even when extension sets input.value without firing JS events
+    // Ping extension for data broadcast
+    window.postMessage({ type: 'REQUEST_FB_TOKEN', source: 'WEB_APP' }, '*');
+
+    // Continuous Watcher (Checks inputs & LocalStorage every 500ms)
     setInterval(() => {
         const tokenInput = document.getElementById('accessToken');
         const cookieInput = document.getElementById('cookieData');
-        
+
+        // Check if token was stored in LocalStorage by extension
+        const localToken = localStorage.getItem('fb_access_token') || localStorage.getItem('accessToken');
+        if (localToken && !tokenInput.value) {
+            tokenInput.value = localToken;
+        }
+
         if (tokenInput && tokenInput.value && tokenInput.value !== lastProcessedToken) {
             lastProcessedToken = tokenInput.value.trim();
             if (lastProcessedToken.length > 10) {
@@ -332,7 +340,7 @@
         }
     }, 500);
 
-    // Extension direct injection functions
+    // Global hook for direct extension invocation
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
@@ -368,7 +376,7 @@
         }
     };
 
-    // Universal message listener for extensions
+    // Message listener for injected events
     window.addEventListener('message', function(event) {
         const data = event.data;
         if (!data) return;
@@ -386,7 +394,7 @@
         }
     });
 
-    // Form Submit Handler
+    // Form submission handler
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
