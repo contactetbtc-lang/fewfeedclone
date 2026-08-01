@@ -318,35 +318,14 @@
         isFetchingAccount = false;
     }
 
-    // Ping extension for data broadcast
-    window.postMessage({ type: 'REQUEST_FB_TOKEN', source: 'WEB_APP' }, '*');
-
-    // Continuous Watcher (Checks inputs & LocalStorage every 500ms)
-    setInterval(() => {
-        const tokenInput = document.getElementById('accessToken');
-        const cookieInput = document.getElementById('cookieData');
-
-        // Check if token was stored in LocalStorage by extension
-        const localToken = localStorage.getItem('fb_access_token') || localStorage.getItem('accessToken');
-        if (localToken && !tokenInput.value) {
-            tokenInput.value = localToken;
+    // Direct event listener for Extension Custom Events
+    window.addEventListener('FB_DATA_INJECTED', function(e) {
+        if (e.detail) {
+            window.updateFacebookData(e.detail);
         }
+    });
 
-        if (tokenInput && tokenInput.value && tokenInput.value !== lastProcessedToken) {
-            lastProcessedToken = tokenInput.value.trim();
-            if (lastProcessedToken.length > 10) {
-                loadAccountInfo(lastProcessedToken, cookieInput ? cookieInput.value : '');
-            }
-        }
-    }, 500);
-
-    // Global hook for direct extension invocation
-    window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
-        if (token) document.getElementById('accessToken').value = token;
-        if (cookie) document.getElementById('cookieData').value = cookie;
-        loadAccountInfo(token, cookie, targetPageId);
-    };
-
+    // Custom data applier
     window.updateFacebookData = function(data) {
         if (!data) return;
         if (data.accessToken || data.token) {
@@ -376,25 +355,35 @@
         }
     };
 
-    // Message listener for injected events
-    window.addEventListener('message', function(event) {
-        const data = event.data;
-        if (!data) return;
+    // Extension bridge function
+    window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
+        if (token) document.getElementById('accessToken').value = token;
+        if (cookie) document.getElementById('cookieData').value = cookie;
+        loadAccountInfo(token, cookie, targetPageId);
+    };
 
-        const token = data.accessToken || data.token || (data.payload && (data.payload.accessToken || data.payload.token));
-        const cookie = data.cookieData || data.cookie || (data.payload && (data.payload.cookieData || data.payload.cookie));
-        const pages = data.pages || (data.payload && data.payload.pages);
-        const user = data.user || (data.payload && data.payload.user);
+    // Watcher interval (Detects extension auto-filling text inputs)
+    setInterval(() => {
+        const tokenInput = document.getElementById('accessToken');
+        const cookieInput = document.getElementById('cookieData');
 
-        if (token || pages || user) {
-            window.updateFacebookData({ accessToken: token, cookieData: cookie, pages: pages, user: user });
-            if (token && !pages) {
-                loadAccountInfo(token, cookie);
+        if (tokenInput && tokenInput.value && tokenInput.value !== lastProcessedToken) {
+            lastProcessedToken = tokenInput.value.trim();
+            if (lastProcessedToken.length > 10) {
+                loadAccountInfo(lastProcessedToken, cookieInput ? cookieInput.value : '');
             }
+        }
+    }, 500);
+
+    // Initial backend request attempt on load (in case session cookie exists)
+    window.addEventListener('DOMContentLoaded', () => {
+        const existingToken = document.getElementById('accessToken').value;
+        if (existingToken) {
+            loadAccountInfo(existingToken, document.getElementById('cookieData').value);
         }
     });
 
-    // Form submission handler
+    // Form Submit Handler
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
