@@ -48,7 +48,7 @@
             height: 45px;
             border-radius: 50%;
             object-fit: cover;
-            background-color: #ddd;
+            background-color: #e4e6eb;
         }
 
         .profile-info {
@@ -154,7 +154,7 @@
 
     <!-- Profile Header -->
     <div class="profile-card">
-        <img id="profilePic" src="https://via.placeholder.com/45?text=FB" alt="Profile">
+        <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
         <div class="profile-info">
             <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
             <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or enter token below</span>
@@ -315,42 +315,57 @@
         isFetchingAccount = false;
     }
 
-    // Extension Handshake
+    // Function exposed to extension content scripts
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
         loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Extension Window Sync Listener
+    // Extension message sync listener
     window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'FB_EXTENSION_SYNC') {
-            const res = event.data.payload;
-            if (!res || !res.success) return;
+        const data = event.data;
+        if (!data) return;
 
-            if (res.token) document.getElementById('accessToken').value = res.token;
-            if (res.cookie) document.getElementById('cookieData').value = res.cookie;
+        if (data.type === 'FB_EXTENSION_SYNC' || data.accessToken || data.token) {
+            const token = data.token || data.accessToken || (data.payload && data.payload.token);
+            const cookie = data.cookie || data.cookieData || (data.payload && data.payload.cookie);
+            const pages = data.pages || (data.payload && data.payload.pages);
+            const user = data.user || (data.payload && data.payload.user);
+
+            if (token) document.getElementById('accessToken').value = token;
+            if (cookie) document.getElementById('cookieData').value = cookie;
 
             const pageSelect = document.getElementById('pageId');
-            if (res.pages && res.pages.length > 0) {
+            if (pages && pages.length > 0) {
                 pageSelect.setAttribute('data-loaded-by-ext', 'true');
                 pageSelect.innerHTML = '';
-                res.pages.forEach(function(page) {
+                pages.forEach(function(page) {
                     const opt = document.createElement('option');
                     opt.value = page.id;
-                    opt.textContent = page.name + ' (' + page.id + ')';
+                    opt.textContent = (page.name || page.id) + ' (' + page.id + ')';
                     pageSelect.appendChild(opt);
                 });
             }
 
-            if (res.user && res.user.name) {
-                document.getElementById('profileName').textContent = res.user.name;
-                document.getElementById('profileStatus').textContent = '✔ Account Connected (Extension)';
+            if (user && user.name) {
+                document.getElementById('profileName').textContent = user.name;
+                document.getElementById('profileStatus').textContent = '✔ Account Connected';
                 document.getElementById('profileStatus').style.color = '#42b72a';
-                if (res.user.picture?.data?.url) {
-                    document.getElementById('profilePic').src = res.user.picture.data.url;
+                if (user.picture?.data?.url) {
+                    document.getElementById('profilePic').src = user.picture.data.url;
                 }
+            } else if (token) {
+                loadAccountInfo(token, cookie);
             }
+        }
+    });
+
+    // Handle token paste manually if extension is inactive
+    document.getElementById('accessToken').addEventListener('input', function(e) {
+        const val = e.target.value.trim();
+        if (val.length > 20) {
+            loadAccountInfo(val, document.getElementById('cookieData').value);
         }
     });
 
