@@ -5,146 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Auto-Publisher Tool</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 650px;
-            width: 100%;
-        }
-
-        h2 {
-            margin-top: 0;
-            color: #1877f2;
-        }
-
-        .profile-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #f7f8fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e4e6eb;
-        }
-
-        .profile-card img {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            object-fit: cover;
-            background-color: #e4e6eb;
-        }
-
-        .profile-info {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .profile-name {
-            font-weight: bold;
-            color: #050505;
-        }
-
-        .profile-status {
-            font-size: 12px;
-            color: #42b72a;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 6px;
-            color: #4b5563;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #111827;
-            background-color: #ffffff;
-        }
-
-        input[type="text"]:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-        }
-
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
-
-        button {
-            background-color: #1877f2;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #166fe5;
-        }
-
-        details {
-            margin-bottom: 20px;
-            background: #fafafa;
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        summary {
-            font-weight: 600;
-            cursor: pointer;
-            color: #65676b;
-        }
-
-        #logOutput {
-            margin-top: 20px;
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 6px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
-        }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 650px; width: 100%; }
+        h2 { margin-top: 0; color: #1877f2; }
+        .profile-card { display: flex; align-items: center; justify-content: space-between; background: #f7f8fa; padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e4e6eb; }
+        .profile-left { display: flex; align-items: center; gap: 12px; }
+        .profile-card img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background-color: #e4e6eb; }
+        .profile-info { display: flex; flex-direction: column; }
+        .profile-name { font-weight: bold; color: #050505; }
+        .profile-status { font-size: 12px; color: #42b72a; }
+        .sync-btn { background-color: #e4e6eb; color: #050505; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .sync-btn:hover { background-color: #d8dadf; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 500; margin-bottom: 6px; color: #4b5563; font-size: 14px; }
+        input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; background-color: #ffffff; }
+        input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
+        textarea { resize: vertical; height: 80px; }
+        button[type="submit"] { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        button[type="submit"]:hover { background-color: #166fe5; }
+        details { margin-bottom: 20px; background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 6px; }
+        summary { font-weight: 600; cursor: pointer; color: #65676b; }
+        #logOutput { margin-top: 20px; background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; display: none; }
     </style>
 </head>
 <body>
@@ -154,15 +36,17 @@
 
     <!-- Profile Header -->
     <div class="profile-card">
-        <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
-        <div class="profile-info">
-            <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
-            <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or enter token below</span>
+        <div class="profile-left">
+            <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
+            <div class="profile-info">
+                <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
+                <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or click Sync</span>
+            </div>
         </div>
+        <button type="button" class="sync-btn" onclick="requestSync()">Sync Extension</button>
     </div>
 
     <form id="publishForm">
-        <!-- Target Page Dropdown -->
         <div class="form-group">
             <label for="pageId">Select Target Facebook Page:</label>
             <select id="pageId" name="pageId" required>
@@ -170,13 +54,11 @@
             </select>
         </div>
 
-        <!-- Post Caption / Message -->
         <div class="form-group">
             <label for="caption">Post Message / Text:</label>
             <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
         </div>
 
-        <!-- Call To Action Dropdown -->
         <div class="form-group">
             <label for="callToActionType">Card Buttons / Call To Action:</label>
             <select id="callToActionType" name="callToActionType">
@@ -184,39 +66,19 @@
                 <option value="NO_BUTTON">No Button</option>
                 <option value="LIKE_PAGE">Like Page</option>
                 <option value="JOIN_GROUP">Join Group</option>
-                <option value="BOOK_TRAVEL">Book Travel</option>
                 <option value="SHOP_NOW">Shop Now</option>
                 <option value="SIGN_UP">Sign Up</option>
-                <option value="BOOK_NOW">Book Now</option>
-                <option value="CONTACT_US">Contact Us</option>
-                <option value="LISTEN_NOW">Listen Now</option>
-                <option value="WATCH_MORE">Watch More</option>
-                <option value="APPLY_NOW">Apply Now</option>
             </select>
         </div>
 
-        <!-- Headline Title -->
         <div class="form-group">
             <label for="linkName">Card 1 title</label>
             <input type="text" id="linkName" name="linkName" required placeholder="Write a short headline">
         </div>
 
-        <!-- Website URL -->
         <div class="form-group">
             <label for="linkUrl">Website Url</label>
             <input type="text" id="linkUrl" name="linkUrl" required placeholder="http://www.example.com/page">
-        </div>
-
-        <!-- Show Display Link (Basic +) -->
-        <div class="form-group">
-            <label for="displayLink">Show display link (Basic +)</label>
-            <input type="text" id="displayLink" name="displayLink" placeholder="facebook.com">
-        </div>
-
-        <!-- Link Description -->
-        <div class="form-group">
-            <label for="description">Put display link description (Basic +)</label>
-            <input type="text" id="description" name="description" placeholder="Write description...">
         </div>
 
         <div class="form-group">
@@ -224,7 +86,6 @@
             <input type="file" id="imageFile" name="imageFile" accept="image/*">
         </div>
 
-        <!-- Credentials Panel -->
         <details open>
             <summary>Credentials & Tokens (Auto-Filled by Extension)</summary>
             <div style="margin-top: 10px;">
@@ -233,16 +94,8 @@
                     <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
                 </div>
                 <div class="form-group">
-                    <label>Access Token 2:</label>
-                    <input type="text" id="accessToken2" name="accessToken2" placeholder="Secondary Token">
-                </div>
-                <div class="form-group">
                     <label>Cookie Data:</label>
                     <input type="text" id="cookieData" name="cookieData" placeholder="c_user=...; xs=...">
-                </div>
-                <div class="form-group">
-                    <label>Ad Account ID:</label>
-                    <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
                 </div>
             </div>
         </details>
@@ -257,73 +110,61 @@
     let isFetchingAccount = false;
     let lastProcessedToken = '';
 
-    async function loadAccountInfo(token, cookie, targetPageId) {
+    async function loadAccountInfo(token, cookie) {
         if (!token || isFetchingAccount) return;
         isFetchingAccount = true;
 
         const pageSelect = document.getElementById('pageId');
         const profileNameEl = document.getElementById('profileName');
         const profileStatusEl = document.getElementById('profileStatus');
-        const profilePicEl = document.getElementById('profilePic');
 
-        profileStatusEl.textContent = 'Connecting to Facebook...';
+        profileStatusEl.textContent = 'Connecting to Facebook API...';
         profileStatusEl.style.color = '#1877f2';
-
-        let userProfile = null;
-        let pagesList = [];
 
         try {
             const infoRes = await fetch('/api/account-info', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accessToken: token || '', cookieData: cookie || '' })
+                body: JSON.stringify({ accessToken: token, cookieData: cookie })
             });
             
             if (infoRes.ok) {
                 const accountData = await infoRes.json();
-                if (accountData.profile) userProfile = accountData.profile;
-                if (accountData.pages && accountData.pages.length > 0) pagesList = accountData.pages;
-                if (accountData.accessToken && !document.getElementById('accessToken').value) {
-                    document.getElementById('accessToken').value = accountData.accessToken;
+                if (accountData.profile?.name) {
+                    profileNameEl.textContent = accountData.profile.name;
+                } else {
+                    profileNameEl.textContent = 'Facebook User Account';
+                }
+
+                if (accountData.pages && accountData.pages.length > 0) {
+                    pageSelect.innerHTML = '';
+                    accountData.pages.forEach(page => {
+                        const opt = document.createElement('option');
+                        opt.value = page.id;
+                        opt.textContent = `${page.name} (${page.id})`;
+                        pageSelect.appendChild(opt);
+                    });
+                    profileStatusEl.textContent = '✔ Connected & Pages Loaded';
+                    profileStatusEl.style.color = '#42b72a';
+                } else {
+                    pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
+                    profileStatusEl.textContent = 'Connected (No Pages Found)';
+                    profileStatusEl.style.color = '#eab308';
                 }
             }
         } catch (err) {
-            console.warn('Backend fetch error:', err);
+            console.warn('Account load error:', err);
+            profileStatusEl.textContent = 'Error connecting to backend API';
+            profileStatusEl.style.color = '#dc2626';
+        } finally {
+            isFetchingAccount = false;
         }
-
-        if (userProfile && userProfile.name) {
-            profileNameEl.textContent = userProfile.name;
-            profileStatusEl.textContent = '✔ Account Connected';
-            profileStatusEl.style.color = '#42b72a';
-            if (userProfile.picture?.data?.url) {
-                profilePicEl.src = userProfile.picture.data.url;
-            }
-        } else if (pagesList.length > 0) {
-            profileNameEl.textContent = 'Facebook Account';
-            profileStatusEl.textContent = '✔ Connected';
-            profileStatusEl.style.color = '#42b72a';
-        } else {
-            profileStatusEl.textContent = 'Connected (No pages retrieved)';
-            profileStatusEl.style.color = '#eab308';
-        }
-
-        if (pagesList.length > 0) {
-            pageSelect.innerHTML = '';
-            pagesList.forEach(function(page) {
-                const option = document.createElement('option');
-                option.value = page.id;
-                option.textContent = (page.name || page.id) + ' (' + page.id + ')';
-                if (targetPageId && page.id === targetPageId) option.selected = true;
-                pageSelect.appendChild(option);
-            });
-        } else {
-            pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
-        }
-
-        isFetchingAccount = false;
     }
 
-    // 1. PostMessage listener for Extension integration
+    function requestSync() {
+        window.postMessage({ type: 'REQUEST_FB_TOKEN', source: 'WEB_APP' }, '*');
+    }
+
     window.addEventListener('message', function(event) {
         const data = event.data;
         if (!data) return;
@@ -342,11 +183,9 @@
         }
     });
 
-    // 2. High-Frequency Watcher for direct DOM value injections
     setInterval(() => {
         const tokenInp = document.getElementById('accessToken');
         const cookieInp = document.getElementById('cookieData');
-
         const currentToken = tokenInp ? tokenInp.value.trim() : '';
         const currentCookie = cookieInp ? cookieInp.value.trim() : '';
 
@@ -354,35 +193,23 @@
             lastProcessedToken = currentToken;
             loadAccountInfo(currentToken, currentCookie);
         }
-    }, 500);
+    }, 1000);
 
-    // 3. Request initial payload on page startup
-    document.addEventListener('DOMContentLoaded', () => {
-        window.postMessage({ type: 'REQUEST_FB_TOKEN', source: 'WEB_APP' }, '*');
-    });
+    document.addEventListener('DOMContentLoaded', requestSync);
 
-    // Form Submit Handler
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
         const logOutput = document.getElementById('logOutput');
-        
         submitBtn.disabled = true;
         submitBtn.innerText = 'Publishing...';
         logOutput.style.display = 'block';
         logOutput.textContent = '🚀 Submitting publish request...\n';
 
-        const formData = new FormData(e.target);
-
         try {
-            const response = await fetch('/publish', {
-                method: 'POST',
-                body: formData
-            });
-
+            const response = await fetch('/publish', { method: 'POST', body: new FormData(e.target) });
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
