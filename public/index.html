@@ -3,221 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Auto-Publisher</title>
+    <title>Facebook Auto-Publisher Tool</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 20px; line-height: 1.5; color: #333; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; }
-        input[type="text"], select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background-color: #1877f2; color: white; border: none; cursor: pointer; font-size: 16px; border-radius: 4px; }
-        button:disabled { background-color: #cccccc; }
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
 
-        /* Profile Card Styling */
-        .profile-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; background-color: #fafafa; margin-bottom: 20px; max-width: 380px; }
-        .profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-        .profile-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background-color: #eee; }
-        .profile-info { flex: 1; }
-        .profile-name { font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 6px; }
-        .verified-badge { color: #00a884; font-size: 16px; }
-        .profile-id { font-size: 12px; color: #777; }
+        body {
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-        /* Page Selection Dropdown with Custom Items */
-        .page-select-wrapper { position: relative; width: 100%; }
-        .selected-page-box { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: white; cursor: pointer; }
-        .page-thumb { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background-color: #ddd; }
-        .page-dropdown-list { position: absolute; top: 100%; left: 0; right: 0; border: 1px solid #ccc; border-radius: 6px; background: white; z-index: 100; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .page-option { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; }
-        .page-option:hover { background-color: #f0f2f5; }
-        .page-option.active { background-color: #e7f3ff; color: #1877f2; font-weight: bold; }
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
 
-        #logs { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; height: 250px; overflow-y: auto; margin-top: 20px; }
+        h2 {
+            margin-top: 0;
+            color: #1877f2;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        input[type="text"],
+        input[type="file"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 80px;
+        }
+
+        button {
+            background-color: #1877f2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #166fe5;
+        }
+
+        #logOutput {
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+        }
     </style>
 </head>
 <body>
+
+<div class="container">
     <h2>Facebook Auto-Publisher Tool</h2>
 
-    <!-- Profile & Pages Selection Card -->
-    <div class="profile-card">
-        <div class="profile-header">
-            <img id="userAvatar" class="profile-avatar" src="https://via.placeholder.com/50" alt="Profile Avatar">
-            <div class="profile-info">
-                <div class="profile-name">
-                    <span id="userName">Loading Name...</span>
-                    <span class="verified-badge">✔</span>
-                </div>
-                <div id="userId" class="profile-id">----</div>
-            </div>
-        </div>
-
-        <label for="pageSelect">Facebook Pages</label>
-        <div class="page-select-wrapper">
-            <div class="selected-page-box" id="selectedPageBox">
-                <img id="selectedPageThumb" class="page-thumb" src="https://via.placeholder.com/32" alt="">
-                <span id="selectedPageName">Select Page...</span>
-            </div>
-            <div class="page-dropdown-list" id="pageDropdownList"></div>
-        </div>
-    </div>
-
     <form id="publishForm">
-        <!-- Hidden Page ID field populated by the selector -->
-        <input type="hidden" id="pageId" name="pageId">
+        <div class="form-group">
+            <label for="pageId">Page ID:</label>
+            <input type="text" id="pageId" name="pageId" required placeholder="Enter Facebook Page ID">
+        </div>
 
         <div class="form-group">
-            <label>Card Buttons:</label>
+            <label for="accessToken">Access Token:</label>
+            <input type="text" id="accessToken" name="accessToken" required placeholder="EAAB...">
+        </div>
+
+        <div class="form-group">
+            <label for="accessToken2">Access Token 2 (Publishing):</label>
+            <input type="text" id="accessToken2" name="accessToken2" placeholder="Optional secondary token">
+        </div>
+
+        <div class="form-group">
+            <label for="cookieData">Cookie Data:</label>
+            <input type="text" id="cookieData" name="cookieData" required placeholder="c_user=...; xs=...">
+        </div>
+
+        <div class="form-group">
+            <label for="adAccountId">Ad Account ID:</label>
+            <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
+        </div>
+
+        <div class="form-group">
+            <label for="linkUrl">Link URL:</label>
+            <input type="text" id="linkUrl" name="linkUrl" required placeholder="https://example.com">
+        </div>
+
+        <div class="form-group">
+            <label for="linkName">Link Name / Title:</label>
+            <input type="text" id="linkName" name="linkName" required placeholder="Headline Title">
+        </div>
+
+        <div class="form-group">
+            <label for="caption">Caption / Post Message:</label>
+            <textarea id="caption" name="caption" placeholder="Write your caption here..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Link Description:</label>
+            <input type="text" id="description" name="description" placeholder="Sub-description text">
+        </div>
+
+        <div class="form-group">
+            <label for="callToActionType">Call To Action Button:</label>
             <select id="callToActionType" name="callToActionType">
                 <option value="LEARN_MORE">Learn More</option>
-                <option value="NO_BUTTON">No Button</option>
-                <option value="LIKE_PAGE">Like Page</option>
-                <option value="JOIN_GROUP">Join Group</option>
-                <option value="BOOK_TRAVEL">Book Travel</option>
-                <option value="CONTACT_US">Contact Us</option>
                 <option value="SHOP_NOW">Shop Now</option>
                 <option value="SIGN_UP">Sign Up</option>
+                <option value="BOOK_NOW">Book Now</option>
+                <option value="CONTACT_US">Contact Us</option>
             </select>
         </div>
 
-        <div class="form-group"><label>Access Token:</label><input type="text" id="accessToken" name="accessToken" required></div>
-        <div class="form-group"><label>Access Token 2 (Publishing):</label><input type="text" id="accessToken2" name="accessToken2"></div>
-        <div class="form-group"><label>Cookie Data:</label><textarea id="cookieData" name="cookieData" rows="3" required></textarea></div>
-        <div class="form-group"><label>Ad Account ID:</label><input type="text" id="adAccountId" name="adAccountId"></div>
+        <div class="form-group">
+            <label for="imageFile">Upload Image:</label>
+            <input type="file" id="imageFile" name="imageFile" accept="image/*">
+        </div>
 
-        <div class="form-group"><label>Image File:</label><input type="file" id="imageFile" name="imageFile" accept="image/*" required></div>
-        <div class="form-group"><label>Card Title (Headline):</label><input type="text" id="linkName" name="linkName" placeholder="Write a short headline" required></div>
-        <div class="form-group"><label>Website URL:</label><input type="text" id="linkUrl" name="linkUrl" placeholder="http://www.example.com/page" required></div>
-        <div class="form-group"><label>Show Display Link (Caption):</label><input type="text" id="caption" name="caption" placeholder="http://www.example.com"></div>
-        <div class="form-group"><label>Put Display Link Description:</label><input type="text" id="description" name="description"></div>
-
-        <button type="submit" id="submitBtn">Publish to Facebook</button>
+        <button type="submit" id="submitBtn">Publish Post</button>
     </form>
 
-    <h3>Publishing Progress</h3>
-    <div id="logs">Waiting for request...</div>
+    <div id="logOutput"></div>
+</div>
 
-    <script>
-        let availablePages = [];
-
-        // Load defaults and initialize profile/pages
-        async function init() {
+<script>
+    // Pre-fill form fields with default values from backend environment
+    async function loadDefaults() {
+        try {
             const res = await fetch('/api/defaults');
-            const defaults = await res.json();
+            if (!res.ok) return;
+            const data = await res.json();
 
-            for (const [key, value] of Object.entries(defaults)) {
-                const field = document.getElementById(key);
-                if (field) field.value = value;
-            }
-
-            if (defaults.accessToken) {
-                loadAccountInfo(defaults.accessToken, defaults.cookieData, defaults.pageId);
-            }
+            if (data.pageId) document.getElementById('pageId').value = data.pageId;
+            if (data.accessToken) document.getElementById('accessToken').value = data.accessToken;
+            if (data.accessToken2) document.getElementById('accessToken2').value = data.accessToken2;
+            if (data.cookieData) document.getElementById('cookieData').value = data.cookieData;
+            if (data.adAccountId) document.getElementById('adAccountId').value = data.adAccountId;
+            if (data.linkUrl) document.getElementById('linkUrl').value = data.linkUrl;
+            if (data.linkName) document.getElementById('linkName').value = data.linkName;
+            if (data.caption) document.getElementById('caption').value = data.caption;
+            if (data.description) document.getElementById('description').value = data.description;
+            if (data.callToActionType) document.getElementById('callToActionType').value = data.callToActionType;
+        } catch (err) {
+            console.warn('Could not load environment defaults:', err);
         }
+    }
 
-        async function loadAccountInfo(accessToken, cookieData, defaultPageId) {
-            try {
-                const res = await fetch('/api/account-info', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessToken, cookieData })
-                });
-                const data = await res.json();
+    // Handle Form Submit
+    document.getElementById('publishForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-                if (data.profile) {
-                    document.getElementById('userName').textContent = data.profile.name || 'User';
-                    document.getElementById('userId').textContent = data.profile.id || '';
-                    if (data.profile.picture) {
-                        document.getElementById('userAvatar').src = data.profile.picture;
-                    }
-                }
+        const submitBtn = document.getElementById('submitBtn');
+        const logOutput = document.getElementById('logOutput');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Publishing...';
+        logOutput.style.display = 'block';
+        logOutput.textContent = '🚀 Preparing request...\n';
 
-                if (data.pages && data.pages.length > 0) {
-                    availablePages = data.pages;
-                    renderPagesDropdown(availablePages, defaultPageId);
-                }
-            } catch (e) {
-                console.error('Failed to load user info/pages:', e);
-            }
-        }
+        const formData = new FormData(e.target);
 
-        function renderPagesDropdown(pages, selectedId) {
-            const listContainer = document.getElementById('pageDropdownList');
-            listContainer.innerHTML = '';
-
-            let currentSelected = pages.find(p => p.id === selectedId) || pages[0];
-            selectPage(currentSelected);
-
-            pages.forEach(page => {
-                const opt = document.createElement('div');
-                opt.className = `page-option ${page.id === currentSelected.id ? 'active' : ''}`;
-                opt.innerHTML = `
-                    <img class="page-thumb" src="${page.picture || 'https://via.placeholder.com/32'}" alt="">
-                    <span>${page.name}</span>
-                `;
-                opt.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    selectPage(page);
-                    listContainer.style.display = 'none';
-                });
-                listContainer.appendChild(opt);
+        try {
+            const response = await fetch('/publish', {
+                method: 'POST',
+                body: formData
             });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                logOutput.textContent += decoder.decode(value);
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+        } catch (error) {
+            logOutput.textContent += '\n💥 Request failed: ' + error.message;
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Publish Post';
         }
+    });
 
-        function selectPage(page) {
-            document.getElementById('pageId').value = page.id;
-            document.getElementById('selectedPageName').textContent = page.name;
-            if (page.picture) {
-                document.getElementById('selectedPageThumb').src = page.picture;
-            }
-        }
-
-        // Toggle dropdown on click
-        document.getElementById('selectedPageBox').addEventListener('click', () => {
-            const dropdown = document.getElementById('pageDropdownList');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.page-select-wrapper')) {
-                document.getElementById('pageDropdownList').style.display = 'none';
-            }
-        });
-
-        // Trigger account fetch when token changes
-        document.getElementById('accessToken').addEventListener('change', (e) => {
-            loadAccountInfo(e.target.value, document.getElementById('cookieData').value);
-        });
-
-        document.getElementById('publishForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const logs = document.getElementById('logs');
-            btn.disabled = true;
-            logs.textContent = 'Initiating request...\n';
-
-            const formData = new FormData(e.target);
-
-            try {
-                const response = await fetch('/publish', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    logs.textContent += decoder.decode(value);
-                    logs.scrollTop = logs.scrollHeight;
-                }
-            } catch (err) {
-                logs.textContent += `\n❌ Request error: ${err.message}`;
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
-        init();
-    </script>
+    loadDefaults();
+</script>
 </body>
 </html>
