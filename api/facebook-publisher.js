@@ -22,7 +22,6 @@ module.exports = async function handler(req, res) {
 
     res.write('🔄 Server received publish request...\n');
 
-    // Run multer parsing manually
     upload.single('imageFile')(req, res, async (err) => {
         if (err) {
             res.write(`💥 Form Parsing Error: ${err.message}\n`);
@@ -46,9 +45,28 @@ module.exports = async function handler(req, res) {
                 return res.end();
             }
 
-            // 1. Construct Facebook API Parameters
+            let activeToken = accessToken;
+
+            // 1. Attempt to resolve specific Page Access Token if a User Token was provided
+            res.write(`🔍 Resolving Page Access Token for Page ID: ${pageId}...\n`);
+            try {
+                const accountsRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
+                const accountsData = await accountsRes.json();
+
+                if (accountsData.data && Array.isArray(accountsData.data)) {
+                    const matchedPage = accountsData.data.find(p => p.id === pageId);
+                    if (matchedPage && matchedPage.access_token) {
+                        activeToken = matchedPage.access_token;
+                        res.write(`🔑 Successfully retrieved Page Access Token!\n`);
+                    }
+                }
+            } catch (tokenErr) {
+                res.write(`⚠️ Token resolution fallback used: ${tokenErr.message}\n`);
+            }
+
+            // 2. Construct Facebook API Parameters
             const params = new URLSearchParams();
-            params.append('access_token', accessToken);
+            params.append('access_token', activeToken);
 
             if (linkUrl) params.append('link', linkUrl);
             if (caption) params.append('message', caption);
@@ -56,7 +74,7 @@ module.exports = async function handler(req, res) {
             if (displayLink) params.append('caption', displayLink); // Maps 'Show display link' to FB 'caption'
             if (description) params.append('description', description);
 
-            // 2. Attach Call-To-Action ONLY if selected and NOT "NO_BUTTON"
+            // 3. Attach Call-To-Action ONLY if selected and NOT "NO_BUTTON"
             if (callToActionType && callToActionType !== 'NO_BUTTON') {
                 const ctaObject = {
                     type: callToActionType,
@@ -69,7 +87,7 @@ module.exports = async function handler(req, res) {
 
             res.write(`📡 Connecting to Facebook Page ID: ${pageId}...\n`);
 
-            // 3. Send payload to Facebook using native global fetch
+            // 4. Send payload to Facebook
             const fbResponse = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
                 method: 'POST',
                 body: params
