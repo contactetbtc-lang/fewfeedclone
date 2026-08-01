@@ -23,7 +23,7 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            max-width: 650px;
             width: 100%;
         }
 
@@ -72,9 +72,10 @@
 
         label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #333;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #4b5563;
+            font-size: 14px;
         }
 
         input[type="text"],
@@ -82,10 +83,18 @@
         select,
         textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 14px;
+            color: #111827;
+            background-color: #ffffff;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
         }
 
         textarea {
@@ -161,35 +170,53 @@
             </select>
         </div>
 
+        <!-- Post Caption / Message -->
         <div class="form-group">
-            <label for="linkUrl">Link URL:</label>
-            <input type="text" id="linkUrl" name="linkUrl" required placeholder="https://example.com">
-        </div>
-
-        <div class="form-group">
-            <label for="linkName">Headline Title:</label>
-            <input type="text" id="linkName" name="linkName" required placeholder="Article Title">
-        </div>
-
-        <div class="form-group">
-            <label for="caption">Post Message / Caption:</label>
+            <label for="caption">Post Message / Text:</label>
             <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
         </div>
 
+        <!-- Call To Action Dropdown matching Image 2 -->
         <div class="form-group">
-            <label for="description">Link Description:</label>
-            <input type="text" id="description" name="description" placeholder="Short description">
-        </div>
-
-        <div class="form-group">
-            <label for="callToActionType">Call To Action:</label>
+            <label for="callToActionType">Card Buttons / Call To Action:</label>
             <select id="callToActionType" name="callToActionType">
-                <option value="LEARN_MORE">Learn More</option>
+                <option value="LEARN_MORE" selected>Learn More</option>
+                <option value="NO_BUTTON">No Button</option>
+                <option value="LIKE_PAGE">Like Page</option>
+                <option value="JOIN_GROUP">Join Group</option>
+                <option value="BOOK_TRAVEL">Book Travel</option>
                 <option value="SHOP_NOW">Shop Now</option>
                 <option value="SIGN_UP">Sign Up</option>
                 <option value="BOOK_NOW">Book Now</option>
                 <option value="CONTACT_US">Contact Us</option>
+                <option value="LISTEN_NOW">Listen Now</option>
+                <option value="WATCH_MORE">Watch More</option>
+                <option value="APPLY_NOW">Apply Now</option>
             </select>
+        </div>
+
+        <!-- Headline Title -->
+        <div class="form-group">
+            <label for="linkName">Card 1 title</label>
+            <input type="text" id="linkName" name="linkName" required placeholder="Write a short headline">
+        </div>
+
+        <!-- Website URL -->
+        <div class="form-group">
+            <label for="linkUrl">Website Url</label>
+            <input type="text" id="linkUrl" name="linkUrl" required placeholder="http://www.example.com/page">
+        </div>
+
+        <!-- Show Display Link (Basic +) -->
+        <div class="form-group">
+            <label for="displayLink">Show display link (Basic +)</label>
+            <input type="text" id="displayLink" name="displayLink" placeholder="facebook.com">
+        </div>
+
+        <!-- Link Description -->
+        <div class="form-group">
+            <label for="description">Put display link description (Basic +)</label>
+            <input type="text" id="description" name="description" placeholder="Write description...">
         </div>
 
         <div class="form-group">
@@ -232,7 +259,6 @@
     async function loadAccountInfo(token, cookie, targetPageId) {
         const pageSelect = document.getElementById('pageId');
         
-        // STOP if extension already populated the pages dropdown
         if (pageSelect && pageSelect.getAttribute('data-loaded-by-ext') === 'true') {
             return;
         }
@@ -271,7 +297,6 @@
             }
         }
 
-        // Only modify pages if NOT locked by extension
         if (pageSelect.getAttribute('data-loaded-by-ext') !== 'true') {
             pageSelect.innerHTML = '';
             if (pagesList.length > 0) {
@@ -290,14 +315,14 @@
         isFetchingAccount = false;
     }
 
-    // Handshake
+    // Extension Handshake
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
         loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Form Submit
+    // Form Submit Handler
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
