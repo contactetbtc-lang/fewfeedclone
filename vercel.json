@@ -1,13 +1,8 @@
 {
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;"
-        }
-      ]
-    }
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" },
+    { "source": "/publish", "destination": "/api/index.js" },
+    { "source": "/(.*)", "destination": "/public/$1" }
   ]
 }
