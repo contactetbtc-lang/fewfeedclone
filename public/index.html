@@ -230,22 +230,23 @@
     let isFetchingAccount = false;
 
     async function loadAccountInfo(token, cookie, targetPageId) {
+        const pageSelect = document.getElementById('pageId');
+        
+        // STOP if extension already populated the pages dropdown
+        if (pageSelect && pageSelect.getAttribute('data-loaded-by-ext') === 'true') {
+            return;
+        }
+
         if (!token || isFetchingAccount) return;
         isFetchingAccount = true;
 
         const profileNameEl = document.getElementById('profileName');
         const profileStatusEl = document.getElementById('profileStatus');
         const profilePicEl = document.getElementById('profilePic');
-        const pageSelect = document.getElementById('pageId');
-
-        profileNameEl.textContent = 'Loading profile...';
-        profileStatusEl.textContent = 'Fetching account details...';
-        profileStatusEl.style.color = '#1877f2';
 
         let userProfile = null;
         let pagesList = [];
 
-        // 1. Try Vercel Backend API route
         try {
             const infoRes = await fetch('/api/account-info', {
                 method: 'POST',
@@ -258,57 +259,19 @@
                 if (accountData.pages && accountData.pages.length > 0) pagesList = accountData.pages;
             }
         } catch (err) {
-            console.warn('Backend API fetch error:', err);
+            console.warn('Backend fetch error:', err);
         }
 
-        // 2. Direct Client Graph API Fallback for Profile
-        if (!userProfile) {
-            try {
-                const profileRes = await fetch('https://graph.facebook.com/v19.0/me?fields=id,name,picture.type(large)&access_token=' + encodeURIComponent(token));
-                if (profileRes.ok) {
-                    const profileData = await profileRes.json();
-                    if (profileData.name) {
-                        userProfile = {
-                            name: profileData.name,
-                            picture: profileData.picture
-                        };
-                    }
-                }
-            } catch (err) {
-                console.error('Direct profile fetch error:', err);
-            }
-        }
-
-        // Update Profile Header
         if (userProfile) {
             profileNameEl.textContent = userProfile.name;
             profileStatusEl.textContent = '✔ Account Connected';
             profileStatusEl.style.color = '#42b72a';
-            if (userProfile.picture && userProfile.picture.data && userProfile.picture.data.url) {
+            if (userProfile.picture?.data?.url) {
                 profilePicEl.src = userProfile.picture.data.url;
             }
-        } else {
-            profileNameEl.textContent = 'Connected Facebook Account';
-            profileStatusEl.textContent = '✔ Token Injected';
-            profileStatusEl.style.color = '#42b72a';
         }
 
-        // 3. Direct Client Graph API Fallback for Pages
-        if (pagesList.length === 0) {
-            try {
-                const pagesRes = await fetch('https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=' + encodeURIComponent(token));
-                if (pagesRes.ok) {
-                    const pagesData = await pagesRes.json();
-                    if (pagesData.data && pagesData.data.length > 0) {
-                        pagesList = pagesData.data;
-                    }
-                }
-            } catch (err) {
-                console.error('Direct pages fetch error:', err);
-            }
-        }
-
-        // Populate Pages Dropdown (Guarded so Extension injected data isn't wiped out)
+        // Only modify pages if NOT locked by extension
         if (pageSelect.getAttribute('data-loaded-by-ext') !== 'true') {
             pageSelect.innerHTML = '';
             if (pagesList.length > 0) {
@@ -327,23 +290,14 @@
         isFetchingAccount = false;
     }
 
-    // Expose global function for extension handshake
+    // Handshake
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
         loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Auto-trigger when access token value changes
-    document.getElementById('accessToken').addEventListener('input', function(e) {
-        const token = e.target.value.trim();
-        const cookie = document.getElementById('cookieData').value.trim();
-        if (token.length > 20) {
-            loadAccountInfo(token, cookie);
-        }
-    });
-
-    // Form Submit Handler
+    // Form Submit
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
