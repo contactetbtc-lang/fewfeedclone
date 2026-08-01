@@ -19,8 +19,9 @@
         input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; background-color: #ffffff; }
         input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
         textarea { resize: vertical; height: 80px; }
-        button[type="submit"] { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        button[type="submit"]:hover { background-color: #166fe5; }
+        button[type="submit"], .manual-btn { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        button[type="submit"]:hover, .manual-btn:hover { background-color: #166fe5; }
+        .manual-btn { background-color: #4b5563; font-size: 14px; padding: 8px 15px; width: auto; margin-top: 5px; }
         details { margin-bottom: 20px; background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 6px; }
         summary { font-weight: 600; cursor: pointer; color: #65676b; }
         #logOutput { margin-top: 20px; background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; display: none; }
@@ -81,16 +82,17 @@
         </div>
 
         <details open>
-            <summary>Credentials & Tokens (Auto-Filled by Extension)</summary>
+            <summary>Credentials & Tokens (Auto-Filled or Paste Manually)</summary>
             <div style="margin-top: 10px;">
                 <div class="form-group">
-                    <label>Access Token:</label>
+                    <label>Access Token (Optional):</label>
                     <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
                 </div>
                 <div class="form-group">
-                    <label>Cookie Data:</label>
-                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=...; xs=...">
+                    <label>Cookie Data (c_user=...; xs=...):</label>
+                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=1000...; xs=2.xxxx;">
                 </div>
+                <button type="button" class="manual-btn" onclick="manualLoadAccount()">Load Pages Manually</button>
             </div>
         </details>
 
@@ -157,6 +159,16 @@
         }
     }
 
+    function manualLoadAccount() {
+        const token = document.getElementById('accessToken').value.trim();
+        const cookie = document.getElementById('cookieData').value.trim();
+        if (!cookie) {
+            alert('Please enter your Facebook cookie data (c_user and xs)');
+            return;
+        }
+        loadAccountInfo(token, cookie);
+    }
+
     window.addEventListener('message', function(event) {
         const data = event.data;
         if (!data) return;
@@ -169,22 +181,6 @@
             loadAccountInfo(token, cookie);
         }
     });
-
-    async function checkExtensionStorage() {
-        if (window.chrome && chrome.runtime) {
-            try {
-                chrome.runtime.sendMessage({ action: 'GET_FB_DATA' }, (response) => {
-                    if (response && response.cookieData) {
-                        if (response.accessToken) document.getElementById('accessToken').value = response.accessToken;
-                        document.getElementById('cookieData').value = response.cookieData;
-                        loadAccountInfo(response.accessToken, response.cookieData);
-                    }
-                });
-            } catch (e) {}
-        }
-    }
-
-    setTimeout(checkExtensionStorage, 500);
 
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
