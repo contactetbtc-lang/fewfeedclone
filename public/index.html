@@ -255,20 +255,20 @@
 
 <script>
     let isFetchingAccount = false;
+    let lastProcessedToken = '';
 
     async function loadAccountInfo(token, cookie, targetPageId) {
         const pageSelect = document.getElementById('pageId');
         
-        if (pageSelect && pageSelect.getAttribute('data-loaded-by-ext') === 'true') {
-            return;
-        }
-
         if (!token || isFetchingAccount) return;
         isFetchingAccount = true;
 
         const profileNameEl = document.getElementById('profileName');
         const profileStatusEl = document.getElementById('profileStatus');
         const profilePicEl = document.getElementById('profilePic');
+
+        profileStatusEl.textContent = 'Connecting to Facebook...';
+        profileStatusEl.style.color = '#1877f2';
 
         let userProfile = null;
         let pagesList = [];
@@ -289,12 +289,16 @@
         }
 
         if (userProfile) {
-            profileNameEl.textContent = userProfile.name;
+            profileNameEl.textContent = userProfile.name || 'Facebook User';
             profileStatusEl.textContent = '✔ Account Connected';
             profileStatusEl.style.color = '#42b72a';
             if (userProfile.picture?.data?.url) {
                 profilePicEl.src = userProfile.picture.data.url;
             }
+        } else {
+            profileNameEl.textContent = 'Token Loaded';
+            profileStatusEl.textContent = '✔ Token Active';
+            profileStatusEl.style.color = '#42b72a';
         }
 
         if (pageSelect.getAttribute('data-loaded-by-ext') !== 'true') {
@@ -303,7 +307,7 @@
                 pagesList.forEach(function(page) {
                     const option = document.createElement('option');
                     option.value = page.id;
-                    option.textContent = page.name + ' (' + page.id + ')';
+                    option.textContent = (page.name || page.id) + ' (' + page.id + ')';
                     if (targetPageId && page.id === targetPageId) option.selected = true;
                     pageSelect.appendChild(option);
                 });
@@ -315,57 +319,70 @@
         isFetchingAccount = false;
     }
 
-    // Function exposed to extension content scripts
+    // Auto-Watcher: Triggers automatically even when extension sets input.value without firing JS events
+    setInterval(() => {
+        const tokenInput = document.getElementById('accessToken');
+        const cookieInput = document.getElementById('cookieData');
+        
+        if (tokenInput && tokenInput.value && tokenInput.value !== lastProcessedToken) {
+            lastProcessedToken = tokenInput.value.trim();
+            if (lastProcessedToken.length > 10) {
+                loadAccountInfo(lastProcessedToken, cookieInput ? cookieInput.value : '');
+            }
+        }
+    }, 500);
+
+    // Extension direct injection functions
     window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
         if (token) document.getElementById('accessToken').value = token;
         if (cookie) document.getElementById('cookieData').value = cookie;
         loadAccountInfo(token, cookie, targetPageId);
     };
 
-    // Extension message sync listener
+    window.updateFacebookData = function(data) {
+        if (!data) return;
+        if (data.accessToken || data.token) {
+            document.getElementById('accessToken').value = data.accessToken || data.token;
+        }
+        if (data.cookieData || data.cookie) {
+            document.getElementById('cookieData').value = data.cookieData || data.cookie;
+        }
+        if (data.pages && data.pages.length > 0) {
+            const pageSelect = document.getElementById('pageId');
+            pageSelect.setAttribute('data-loaded-by-ext', 'true');
+            pageSelect.innerHTML = '';
+            data.pages.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = (p.name || p.id) + ' (' + p.id + ')';
+                pageSelect.appendChild(opt);
+            });
+        }
+        if (data.user && data.user.name) {
+            document.getElementById('profileName').textContent = data.user.name;
+            document.getElementById('profileStatus').textContent = '✔ Account Connected';
+            document.getElementById('profileStatus').style.color = '#42b72a';
+            if (data.user.picture?.data?.url) {
+                document.getElementById('profilePic').src = data.user.picture.data.url;
+            }
+        }
+    };
+
+    // Universal message listener for extensions
     window.addEventListener('message', function(event) {
         const data = event.data;
         if (!data) return;
 
-        if (data.type === 'FB_EXTENSION_SYNC' || data.accessToken || data.token) {
-            const token = data.token || data.accessToken || (data.payload && data.payload.token);
-            const cookie = data.cookie || data.cookieData || (data.payload && data.payload.cookie);
-            const pages = data.pages || (data.payload && data.payload.pages);
-            const user = data.user || (data.payload && data.payload.user);
+        const token = data.accessToken || data.token || (data.payload && (data.payload.accessToken || data.payload.token));
+        const cookie = data.cookieData || data.cookie || (data.payload && (data.payload.cookieData || data.payload.cookie));
+        const pages = data.pages || (data.payload && data.payload.pages);
+        const user = data.user || (data.payload && data.payload.user);
 
-            if (token) document.getElementById('accessToken').value = token;
-            if (cookie) document.getElementById('cookieData').value = cookie;
-
-            const pageSelect = document.getElementById('pageId');
-            if (pages && pages.length > 0) {
-                pageSelect.setAttribute('data-loaded-by-ext', 'true');
-                pageSelect.innerHTML = '';
-                pages.forEach(function(page) {
-                    const opt = document.createElement('option');
-                    opt.value = page.id;
-                    opt.textContent = (page.name || page.id) + ' (' + page.id + ')';
-                    pageSelect.appendChild(opt);
-                });
-            }
-
-            if (user && user.name) {
-                document.getElementById('profileName').textContent = user.name;
-                document.getElementById('profileStatus').textContent = '✔ Account Connected';
-                document.getElementById('profileStatus').style.color = '#42b72a';
-                if (user.picture?.data?.url) {
-                    document.getElementById('profilePic').src = user.picture.data.url;
-                }
-            } else if (token) {
+        if (token || pages || user) {
+            window.updateFacebookData({ accessToken: token, cookieData: cookie, pages: pages, user: user });
+            if (token && !pages) {
                 loadAccountInfo(token, cookie);
             }
-        }
-    });
-
-    // Handle token paste manually if extension is inactive
-    document.getElementById('accessToken').addEventListener('input', function(e) {
-        const val = e.target.value.trim();
-        if (val.length > 20) {
-            loadAccountInfo(val, document.getElementById('cookieData').value);
         }
     });
 
