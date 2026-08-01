@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
             const {
                 pageId,
                 accessToken,
+                accessToken2,    // Optional fallback token from credentials panel
                 linkUrl,
                 linkName,
                 caption,         // Post Message / Text
@@ -40,24 +41,31 @@ module.exports = async function handler(req, res) {
                 callToActionType
             } = req.body || {};
 
-            if (!pageId || !accessToken) {
+            let primaryToken = accessToken || accessToken2;
+
+            if (!pageId || !primaryToken) {
                 res.write('💥 Error: Missing required Page ID or Access Token.\n');
                 return res.end();
             }
 
-            let activeToken = accessToken;
+            let activeToken = primaryToken;
 
             // 1. Attempt to resolve specific Page Access Token if a User Token was provided
             res.write(`🔍 Resolving Page Access Token for Page ID: ${pageId}...\n`);
             try {
-                const accountsRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
+                const accountsRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${primaryToken}`);
                 const accountsData = await accountsRes.json();
 
-                if (accountsData.data && Array.isArray(accountsData.data)) {
+                if (accountsData.error) {
+                    res.write(`⚠️ Token Check Failed: ${accountsData.error.message}\n`);
+                    res.write(`👉 Your token is expired or invalid. Please extract a fresh token.\n`);
+                } else if (accountsData.data && Array.isArray(accountsData.data)) {
                     const matchedPage = accountsData.data.find(p => p.id === pageId);
                     if (matchedPage && matchedPage.access_token) {
                         activeToken = matchedPage.access_token;
                         res.write(`🔑 Successfully retrieved Page Access Token!\n`);
+                    } else {
+                        res.write(`⚠️ Page ID not found under user accounts. Attempting direct request with primary token...\n`);
                     }
                 }
             } catch (tokenErr) {
