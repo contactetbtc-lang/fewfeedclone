@@ -1,19 +1,15 @@
 {
   "name": "fewfeedclone",
   "version": "1.0.0",
-  "description": "Facebook Auto Publisher App",
+  "description": "Facebook Auto-Publisher Tool",
   "main": "api/index.js",
-  "type": "module",
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "start": "node api/index.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^2.2.0"
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

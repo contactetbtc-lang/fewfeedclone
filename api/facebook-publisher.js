@@ -1,37 +1,26 @@
-const multer = require('multer');
-
-// Configure Multer for memory-only storage in serverless environments
-const upload = multer({ storage: multer.memoryStorage() });
-
-// Helper to run middleware in serverless environment
-function runMiddleware(req, res, fn) {
-    return new Promise((resolve, reject) => {
-        fn(req, res, (result) => {
-            if (result instanceof Error) {
-                return reject(result);
-            }
-            return resolve(result);
-        });
-    });
-}
-
+// Native Vercel / Node.js Serverless Function
 module.exports = async function handler(req, res) {
-    // Only allow POST requests
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method Not Allowed' });
-        return;
+    // Enable CORS and streaming headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    // Set chunked streaming headers for live log console
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    // Streaming text log headers
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Transfer-Encoding', 'chunked');
 
     res.write('🔄 Server received publish request...\n');
 
     try {
-        // Parse multipart/form-data
-        await runMiddleware(req, res, upload.single('imageFile'));
-
+        // Extract parameters from req.body (parsed automatically by Vercel)
         const {
             pageId,
             accessToken,
@@ -55,10 +44,10 @@ module.exports = async function handler(req, res) {
         if (linkUrl) params.append('link', linkUrl);
         if (caption) params.append('message', caption);
         if (linkName) params.append('name', linkName);
-        if (displayLink) params.append('caption', displayLink); // 'Show display link' maps to FB 'caption'
+        if (displayLink) params.append('caption', displayLink); // Maps 'Show display link' to FB 'caption'
         if (description) params.append('description', description);
 
-        // 2. Attach Call-To-Action ONLY if not "NO_BUTTON"
+        // 2. Attach Call-To-Action ONLY if selected and NOT "NO_BUTTON"
         if (callToActionType && callToActionType !== 'NO_BUTTON') {
             const ctaObject = {
                 type: callToActionType,
@@ -92,11 +81,4 @@ module.exports = async function handler(req, res) {
     } finally {
         res.end();
     }
-};
-
-// Disable standard bodyParser to let Multer handle file uploads
-module.exports.config = {
-    api: {
-        bodyParser: false,
-    },
 };
