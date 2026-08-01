@@ -36,7 +36,7 @@
         <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
         <div class="profile-info">
             <span class="profile-name" id="profileName">Detecting Facebook Account...</span>
-            <span class="profile-status" id="profileStatus" style="color: #65676b;">Make sure you are logged into Facebook in another tab</span>
+            <span class="profile-status" id="profileStatus" style="color: #65676b;">Connecting to Facebook API...</span>
         </div>
     </div>
 
@@ -102,7 +102,6 @@
 
 <script>
     let isFetchingAccount = false;
-    let lastProcessedCookie = '';
 
     async function loadAccountInfo(token, cookie) {
         if (!cookie || isFetchingAccount) return;
@@ -145,6 +144,9 @@
                     profileStatusEl.textContent = 'Connected (No Pages Found)';
                     profileStatusEl.style.color = '#eab308';
                 }
+            } else {
+                profileStatusEl.textContent = 'Failed to fetch account info';
+                profileStatusEl.style.color = '#dc2626';
             }
         } catch (err) {
             console.warn('Account load error:', err);
@@ -158,29 +160,31 @@
     window.addEventListener('message', function(event) {
         const data = event.data;
         if (!data) return;
-
         const token = data.accessToken || data.token;
         const cookie = data.cookieData || data.cookie;
 
-        if (cookie && cookie !== lastProcessedCookie) {
-            lastProcessedCookie = cookie;
+        if (cookie) {
             if (token) document.getElementById('accessToken').value = token;
             document.getElementById('cookieData').value = cookie;
             loadAccountInfo(token, cookie);
         }
     });
 
-    setInterval(() => {
-        const tokenInp = document.getElementById('accessToken');
-        const cookieInp = document.getElementById('cookieData');
-        const currentCookie = cookieInp ? cookieInp.value.trim() : '';
-        const currentToken = tokenInp ? tokenInp.value.trim() : '';
-
-        if (currentCookie && currentCookie !== lastProcessedCookie) {
-            lastProcessedCookie = currentCookie;
-            loadAccountInfo(currentToken, currentCookie);
+    async function checkExtensionStorage() {
+        if (window.chrome && chrome.runtime) {
+            try {
+                chrome.runtime.sendMessage({ action: 'GET_FB_DATA' }, (response) => {
+                    if (response && response.cookieData) {
+                        if (response.accessToken) document.getElementById('accessToken').value = response.accessToken;
+                        document.getElementById('cookieData').value = response.cookieData;
+                        loadAccountInfo(response.accessToken, response.cookieData);
+                    }
+                });
+            } catch (e) {}
         }
-    }, 1000);
+    }
+
+    setTimeout(checkExtensionStorage, 500);
 
     document.getElementById('publishForm').addEventListener('submit', async function(e) {
         e.preventDefault();
