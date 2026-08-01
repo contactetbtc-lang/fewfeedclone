@@ -5,12 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Auto-Publisher Tool</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
@@ -20,86 +16,64 @@
 
         .container {
             background: #ffffff;
-            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            max-width: 650px;
+            padding: 24px;
+            max-width: 600px;
             width: 100%;
         }
 
         h2 {
-            margin-top: 0;
             color: #1877f2;
+            margin-top: 0;
         }
 
         .profile-card {
+            background: #f7f8fa;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
-            background: #f7f8fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #e4e6eb;
         }
 
         .profile-card img {
-            width: 45px;
-            height: 45px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            object-fit: cover;
-            background-color: #ddd;
+            background-color: #ccc;
         }
 
-        .profile-info {
-            display: flex;
-            flex-direction: column;
+        .profile-info strong {
+            display: block;
+            color: #1c1e21;
         }
 
-        .profile-name {
-            font-weight: bold;
-            color: #050505;
-        }
-
-        .profile-status {
-            font-size: 12px;
-            color: #42b72a;
+        .profile-info span {
+            font-size: 0.85rem;
+            color: #65676b;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
 
         label {
             display: block;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 6px;
-            color: #4b5563;
-            font-size: 14px;
+            color: #4b4f56;
         }
 
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea {
+        select, input, textarea {
             width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
+            padding: 10px;
+            border: 1px solid #ccd0d5;
             border-radius: 6px;
+            box-sizing: border-box;
             font-size: 14px;
-            color: #111827;
-            background-color: #ffffff;
-        }
-
-        input[type="text"]:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-        }
-
-        textarea {
-            resize: vertical;
-            height: 80px;
         }
 
         button {
@@ -107,263 +81,158 @@
             color: white;
             border: none;
             padding: 12px 20px;
-            border-radius: 6px;
             font-size: 16px;
             font-weight: bold;
+            border-radius: 6px;
             cursor: pointer;
             width: 100%;
-            margin-top: 10px;
         }
 
         button:hover {
             background-color: #166fe5;
         }
 
-        details {
-            margin-bottom: 20px;
-            background: #fafafa;
-            border: 1px solid #eee;
-            padding: 10px;
-            border-radius: 6px;
-        }
-
-        summary {
-            font-weight: 600;
-            cursor: pointer;
-            color: #65676b;
-        }
-
-        #logOutput {
-            margin-top: 20px;
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            border-radius: 6px;
+        .log-console {
+            background: #1c1e21;
+            color: #00ff66;
             font-family: monospace;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 20px;
+            min-height: 80px;
             white-space: pre-wrap;
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Facebook Auto-Publisher Tool</h2>
+    <div class="container">
+        <h2>Facebook Auto-Publisher Tool</h2>
 
-    <!-- Profile Header -->
-    <div class="profile-card">
-        <img id="profilePic" src="https://via.placeholder.com/45?text=FB" alt="Profile">
-        <div class="profile-info">
-            <span class="profile-name" id="profileName">Awaiting Extension Data...</span>
-            <span class="profile-status" id="profileStatus" style="color: #65676b;">Log in to Facebook or enter token below</span>
+        <!-- Facebook Connected Account Card -->
+        <div class="profile-card">
+            <img id="userAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%23aaa'/%3E%3Cpath d='M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z' fill='%23aaa'/%3E%3C/svg%3E" alt="Profile">
+            <div class="profile-info">
+                <strong id="userName">Awaiting Extension Data...</strong>
+                <span id="userSubtext">Log in to Facebook or sync extension</span>
+            </div>
         </div>
+
+        <!-- Publisher Form -->
+        <form id="publishForm" action="/publish" method="POST" enctype="multipart/form-data">
+            <input type="hidden" id="accessToken" name="accessToken" value="">
+
+            <div class="form-group">
+                <label for="pageSelect">Select Target Facebook Page:</label>
+                <select id="pageSelect" name="pageId" required>
+                    <option value="">Awaiting access token...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="caption">Post Message / Text:</label>
+                <textarea id="caption" name="caption" rows="3" placeholder="Write caption..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="linkUrl">Link URL:</label>
+                <input type="url" id="linkUrl" name="linkUrl" placeholder="https://example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="callToActionType">Call To Action Button:</label>
+                <select id="callToActionType" name="callToActionType">
+                    <option value="NO_BUTTON">No Button</option>
+                    <option value="LEARN_MORE">Learn More</option>
+                    <option value="SHOP_NOW">Shop Now</option>
+                    <option value="SIGN_UP">Sign Up</option>
+                </select>
+            </div>
+
+            <button type="submit">Publish Post</button>
+        </form>
+
+        <!-- Live Streaming Log Box -->
+        <div id="logConsole" class="log-console">🚀 Ready for publishing...</div>
     </div>
 
-    <form id="publishForm">
-        <!-- Target Page Dropdown -->
-        <div class="form-group">
-            <label for="pageId">Select Target Facebook Page:</label>
-            <select id="pageId" name="pageId" required>
-                <option value="">Awaiting access token...</option>
-            </select>
-        </div>
+    <!-- Extension Data Listener Script -->
+    <script>
+      // Listen for incoming sync messages sent from content-vercel.js
+      window.addEventListener('message', async (event) => {
+        if (event.data && event.data.type === 'FB_EXTENSION_TOKEN_SYNC') {
+          const { token, pages } = event.data;
 
-        <!-- Post Caption / Message -->
-        <div class="form-group">
-            <label for="caption">Post Message / Text:</label>
-            <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
-        </div>
-
-        <!-- Call To Action Dropdown -->
-        <div class="form-group">
-            <label for="callToActionType">Card Buttons / Call To Action:</label>
-            <select id="callToActionType" name="callToActionType">
-                <option value="LEARN_MORE" selected>Learn More</option>
-                <option value="NO_BUTTON">No Button</option>
-                <option value="LIKE_PAGE">Like Page</option>
-                <option value="JOIN_GROUP">Join Group</option>
-                <option value="BOOK_TRAVEL">Book Travel</option>
-                <option value="SHOP_NOW">Shop Now</option>
-                <option value="SIGN_UP">Sign Up</option>
-                <option value="BOOK_NOW">Book Now</option>
-                <option value="CONTACT_US">Contact Us</option>
-                <option value="LISTEN_NOW">Listen Now</option>
-                <option value="WATCH_MORE">Watch More</option>
-                <option value="APPLY_NOW">Apply Now</option>
-            </select>
-        </div>
-
-        <!-- Headline Title -->
-        <div class="form-group">
-            <label for="linkName">Card 1 title</label>
-            <input type="text" id="linkName" name="linkName" required placeholder="Write a short headline">
-        </div>
-
-        <!-- Website URL -->
-        <div class="form-group">
-            <label for="linkUrl">Website Url</label>
-            <input type="text" id="linkUrl" name="linkUrl" required placeholder="http://www.example.com/page">
-        </div>
-
-        <!-- Show Display Link (Basic +) -->
-        <div class="form-group">
-            <label for="displayLink">Show display link (Basic +)</label>
-            <input type="text" id="displayLink" name="displayLink" placeholder="facebook.com">
-        </div>
-
-        <!-- Link Description -->
-        <div class="form-group">
-            <label for="description">Put display link description (Basic +)</label>
-            <input type="text" id="description" name="description" placeholder="Write description...">
-        </div>
-
-        <div class="form-group">
-            <label for="imageFile">Upload Image:</label>
-            <input type="file" id="imageFile" name="imageFile" accept="image/*">
-        </div>
-
-        <!-- Credentials Panel -->
-        <details open>
-            <summary>Credentials & Tokens (Auto-Filled by Extension)</summary>
-            <div style="margin-top: 10px;">
-                <div class="form-group">
-                    <label>Access Token:</label>
-                    <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
-                </div>
-                <div class="form-group">
-                    <label>Access Token 2:</label>
-                    <input type="text" id="accessToken2" name="accessToken2" placeholder="Secondary Token">
-                </div>
-                <div class="form-group">
-                    <label>Cookie Data:</label>
-                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=...; xs=...">
-                </div>
-                <div class="form-group">
-                    <label>Ad Account ID:</label>
-                    <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
-                </div>
-            </div>
-        </details>
-
-        <button type="submit" id="submitBtn">Publish Post</button>
-    </form>
-
-    <div id="logOutput"></div>
-</div>
-
-<script>
-    let isFetchingAccount = false;
-
-    async function loadAccountInfo(token, cookie, targetPageId) {
-        const pageSelect = document.getElementById('pageId');
-        
-        // Anti-flicker guard: Skip if extension already populated the dropdown
-        if (pageSelect && pageSelect.getAttribute('data-loaded-by-ext') === 'true') {
-            return;
-        }
-
-        if (!token || isFetchingAccount) return;
-        isFetchingAccount = true;
-
-        const profileNameEl = document.getElementById('profileName');
-        const profileStatusEl = document.getElementById('profileStatus');
-        const profilePicEl = document.getElementById('profilePic');
-
-        let userProfile = null;
-        let pagesList = [];
-
-        try {
-            const infoRes = await fetch('/api/account-info', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accessToken: token, cookieData: cookie })
-            });
-            if (infoRes.ok) {
-                const accountData = await infoRes.json();
-                if (accountData.profile) userProfile = accountData.profile;
-                if (accountData.pages && accountData.pages.length > 0) pagesList = accountData.pages;
+          if (token) {
+            // 1. Set Access Token inside hidden input
+            const tokenInput = document.getElementById('accessToken');
+            if (tokenInput) {
+              tokenInput.value = token;
             }
-        } catch (err) {
-            console.warn('Backend fetch error:', err);
-        }
 
-        if (userProfile) {
-            profileNameEl.textContent = userProfile.name;
-            profileStatusEl.textContent = '✔ Account Connected';
-            profileStatusEl.style.color = '#42b72a';
-            if (userProfile.picture?.data?.url) {
-                profilePicEl.src = userProfile.picture.data.url;
+            // 2. Fetch User Profile to update header UI
+            try {
+              const res = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${token}`);
+              const user = await res.json();
+
+              if (user && user.name) {
+                document.getElementById('userName').textContent = `${user.name} (${user.id})`;
+                document.getElementById('userSubtext').textContent = '✓ Connected & Synced';
+                
+                if (user.picture && user.picture.data && user.picture.data.url) {
+                  document.getElementById('userAvatar').src = user.picture.data.url;
+                }
+              }
+            } catch (err) {
+              console.warn('Profile lookup failed:', err);
             }
-        }
 
-        if (pageSelect.getAttribute('data-loaded-by-ext') !== 'true') {
-            pageSelect.innerHTML = '';
-            if (pagesList.length > 0) {
-                pagesList.forEach(function(page) {
-                    const option = document.createElement('option');
-                    option.value = page.id;
-                    option.textContent = page.name + ' (' + page.id + ')';
-                    if (targetPageId && page.id === targetPageId) option.selected = true;
-                    pageSelect.appendChild(option);
-                });
-            } else {
-                pageSelect.innerHTML = '<option value="">No pages found for this token</option>';
+            // 3. Populate Page Dropdown Options
+            const pageSelect = document.getElementById('pageSelect');
+            if (pageSelect && pages && pages.length > 0) {
+              pageSelect.innerHTML = ''; // Clear "Awaiting..." placeholder
+              
+              pages.forEach(page => {
+                const opt = document.createElement('option');
+                opt.value = page.id;
+                opt.textContent = `${page.name} (${page.id})`;
+                opt.dataset.pageToken = page.access_token;
+                pageSelect.appendChild(opt);
+              });
             }
+          }
         }
+      });
 
-        isFetchingAccount = false;
-    }
+      // Handle streaming console responses on submit
+      const form = document.getElementById('publishForm');
+      const logConsole = document.getElementById('logConsole');
 
-    // Extension Handshake
-    window.fetchAccountInfoFromExtension = function(token, cookie, targetPageId) {
-        if (token) document.getElementById('accessToken').value = token;
-        if (cookie) document.getElementById('cookieData').value = cookie;
-        loadAccountInfo(token, cookie, targetPageId);
-    };
-
-    // Form Submit Handler
-    document.getElementById('publishForm').addEventListener('submit', async function(e) {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const submitBtn = document.getElementById('submitBtn');
-        const logOutput = document.getElementById('logOutput');
-        
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Publishing...';
-        logOutput.style.display = 'block';
-        logOutput.textContent = '🚀 Submitting publish request...\n';
+        logConsole.textContent = '🚀 Submitting publish request...\n';
 
-        const formData = new FormData(e.target);
-
-        // PREVENT INVALID REQUEST: Remove NO_BUTTON option before sending to FB Graph API
-        const ctaType = formData.get('callToActionType');
-        if (!ctaType || ctaType === 'NO_BUTTON') {
-            formData.delete('callToActionType');
-        }
+        const formData = new FormData(form);
 
         try {
-            const response = await fetch('/publish', {
-                method: 'POST',
-                body: formData
-            });
+          const response = await fetch('/publish', {
+            method: 'POST',
+            body: formData
+          });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder('utf-8');
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                logOutput.textContent += decoder.decode(value);
-                logOutput.scrollTop = logOutput.scrollHeight;
-            }
-        } catch (error) {
-            logOutput.textContent += '\n💥 Request failed: ' + error.message;
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Publish Post';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            logConsole.textContent += decoder.decode(value, { stream: true });
+          }
+        } catch (err) {
+          logConsole.textContent += `💥 Network Error: ${err.message}\n`;
         }
-    });
-</script>
+      });
+    </script>
 </body>
 </html>
