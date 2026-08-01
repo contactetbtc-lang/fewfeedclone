@@ -10,24 +10,19 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static assets from public directory
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Configure memory storage for Multer (compatible with Vercel)
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Serve frontend UI
 app.get('/', (req, res) => {
     res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
 });
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
-// Default values endpoint
 app.get('/api/defaults', (req, res) => {
     res.json({
         accessToken: process.env.ACCESS_TOKEN || '',
@@ -43,25 +38,28 @@ app.get('/api/defaults', (req, res) => {
     });
 });
 
-// Sync tokens endpoint
-app.post('/api/update-tokens', (req, res) => {
+app.post('/api/account-info', async (req, res) => {
     try {
         const { accessToken, cookieData } = req.body;
-        if (!accessToken || !cookieData) {
-            return res.status(400).json({ error: 'Missing required accessToken or cookieData' });
+        const token = accessToken || process.env.ACCESS_TOKEN;
+        const cookie = cookieData || process.env.COOKIE_DATA;
+
+        if (!token) {
+            return res.status(400).json({ error: 'Access token is required' });
         }
 
-        process.env.ACCESS_TOKEN = accessToken;
-        process.env.ACCESS_TOKEN2 = accessToken;
-        process.env.COOKIE_DATA = cookieData;
+        const publisher = new FacebookPublisher({ accessToken: token, cookieData: cookie });
+        const [profile, pages] = await Promise.all([
+            publisher.getUserProfile().catch(() => null),
+            publisher.getUserPages().catch(() => [])
+        ]);
 
-        res.json({ success: true, message: 'Tokens updated successfully' });
+        res.json({ profile, pages });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Main Facebook publishing endpoint
 app.post('/publish', upload.single('imageFile'), async (req, res) => {
     try {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -69,21 +67,22 @@ app.post('/publish', upload.single('imageFile'), async (req, res) => {
 
         res.write('🔄 Server received publish request...\n');
 
+        const accessToken = req.body.accessToken || process.env.ACCESS_TOKEN;
+        const cookieData = req.body.cookieData || process.env.COOKIE_DATA;
+        const pageId = req.body.pageId || process.env.PAGE_ID;
+
         const {
-            accessToken,
             accessToken2,
-            cookieData,
             linkUrl,
             linkName,
             adAccountId,
-            pageId,
             caption,
             description,
             callToActionType
         } = req.body;
 
         if (!accessToken || !cookieData || !linkUrl || !linkName || !pageId) {
-            res.write('❌ Missing required input fields (Page ID, Access Token, Cookie Data, Link URL, or Title)\n');
+            res.write('❌ Missing required fields (Page ID, Access Token, or Link details)\n');
             return res.end();
         }
 

@@ -32,6 +32,39 @@
             color: #1877f2;
         }
 
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #f7f8fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e4e6eb;
+        }
+
+        .profile-card img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-name {
+            font-weight: bold;
+            color: #050505;
+        }
+
+        .profile-status {
+            font-size: 12px;
+            color: #42b72a;
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
@@ -76,6 +109,20 @@
             background-color: #166fe5;
         }
 
+        details {
+            margin-bottom: 20px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        summary {
+            font-weight: 600;
+            cursor: pointer;
+            color: #65676b;
+        }
+
         #logOutput {
             margin-top: 20px;
             background: #1e1e1e;
@@ -95,30 +142,22 @@
 <div class="container">
     <h2>Facebook Auto-Publisher Tool</h2>
 
+    <!-- Profile Header -->
+    <div class="profile-card">
+        <img id="profilePic" src="https://via.placeholder.com/45?text=FB" alt="Profile">
+        <div class="profile-info">
+            <span class="profile-name" id="profileName">Loading Facebook Account...</span>
+            <span class="profile-status" id="profileStatus">Connecting...</span>
+        </div>
+    </div>
+
     <form id="publishForm">
+        <!-- Target Page Dropdown -->
         <div class="form-group">
-            <label for="pageId">Page ID:</label>
-            <input type="text" id="pageId" name="pageId" required placeholder="Enter Facebook Page ID">
-        </div>
-
-        <div class="form-group">
-            <label for="accessToken">Access Token:</label>
-            <input type="text" id="accessToken" name="accessToken" required placeholder="EAAB...">
-        </div>
-
-        <div class="form-group">
-            <label for="accessToken2">Access Token 2 (Publishing):</label>
-            <input type="text" id="accessToken2" name="accessToken2" placeholder="Optional secondary token">
-        </div>
-
-        <div class="form-group">
-            <label for="cookieData">Cookie Data:</label>
-            <input type="text" id="cookieData" name="cookieData" required placeholder="c_user=...; xs=...">
-        </div>
-
-        <div class="form-group">
-            <label for="adAccountId">Ad Account ID:</label>
-            <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
+            <label for="pageId">Select Target Facebook Page:</label>
+            <select id="pageId" name="pageId" required>
+                <option value="">Fetching managed pages...</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -127,22 +166,22 @@
         </div>
 
         <div class="form-group">
-            <label for="linkName">Link Name / Title:</label>
-            <input type="text" id="linkName" name="linkName" required placeholder="Headline Title">
+            <label for="linkName">Headline Title:</label>
+            <input type="text" id="linkName" name="linkName" required placeholder="Article Title">
         </div>
 
         <div class="form-group">
-            <label for="caption">Caption / Post Message:</label>
-            <textarea id="caption" name="caption" placeholder="Write your caption here..."></textarea>
+            <label for="caption">Post Message / Caption:</label>
+            <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
         </div>
 
         <div class="form-group">
             <label for="description">Link Description:</label>
-            <input type="text" id="description" name="description" placeholder="Sub-description text">
+            <input type="text" id="description" name="description" placeholder="Short description">
         </div>
 
         <div class="form-group">
-            <label for="callToActionType">Call To Action Button:</label>
+            <label for="callToActionType">Call To Action:</label>
             <select id="callToActionType" name="callToActionType">
                 <option value="LEARN_MORE">Learn More</option>
                 <option value="SHOP_NOW">Shop Now</option>
@@ -157,6 +196,29 @@
             <input type="file" id="imageFile" name="imageFile" accept="image/*">
         </div>
 
+        <!-- Hidden / Extension Populated Fields -->
+        <details>
+            <summary>Advanced Credentials (Auto-Filled by Extension)</summary>
+            <div style="margin-top: 10px;">
+                <div class="form-group">
+                    <label>Access Token:</label>
+                    <input type="text" id="accessToken" name="accessToken" placeholder="EAAB...">
+                </div>
+                <div class="form-group">
+                    <label>Access Token 2:</label>
+                    <input type="text" id="accessToken2" name="accessToken2" placeholder="Secondary Token">
+                </div>
+                <div class="form-group">
+                    <label>Cookie Data:</label>
+                    <input type="text" id="cookieData" name="cookieData" placeholder="c_user=...; xs=...">
+                </div>
+                <div class="form-group">
+                    <label>Ad Account ID:</label>
+                    <input type="text" id="adAccountId" name="adAccountId" placeholder="act_123456789">
+                </div>
+            </div>
+        </details>
+
         <button type="submit" id="submitBtn">Publish Post</button>
     </form>
 
@@ -164,29 +226,72 @@
 </div>
 
 <script>
-    // Pre-fill form fields with default values from backend environment
+    // Called by Extension or Page Load to load profile and pages
+    window.fetchAccountInfoFromExtension = async function(token, cookie, targetPageId) {
+        try {
+            const infoRes = await fetch('/api/account-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken: token, cookieData: cookie })
+            });
+
+            const accountData = await infoRes.json();
+
+            if (accountData.profile) {
+                document.getElementById('profileName').textContent = accountData.profile.name || 'Facebook User';
+                document.getElementById('profileStatus').textContent = '✔ Authenticated via Extension';
+                if (accountData.profile.picture?.data?.url) {
+                    document.getElementById('profilePic').src = accountData.profile.picture.data.url;
+                }
+            }
+
+            const pageSelect = document.getElementById('pageId');
+            pageSelect.innerHTML = '';
+
+            if (accountData.pages && accountData.pages.length > 0) {
+                accountData.pages.forEach(page => {
+                    const option = document.createElement('option');
+                    option.value = page.id;
+                    option.textContent = `${page.name} (${page.id})`;
+                    if (targetPageId && page.id === targetPageId) {
+                        option.selected = true;
+                    }
+                    pageSelect.appendChild(option);
+                });
+            } else if (targetPageId) {
+                const option = document.createElement('option');
+                option.value = targetPageId;
+                option.textContent = `Page (${targetPageId})`;
+                option.selected = true;
+                pageSelect.appendChild(option);
+            }
+        } catch (err) {
+            console.error('Failed to load account info:', err);
+        }
+    };
+
+    // Load defaults on page initialization
     async function loadDefaults() {
         try {
             const res = await fetch('/api/defaults');
             if (!res.ok) return;
-            const data = await res.json();
+            const defaults = await res.json();
 
-            if (data.pageId) document.getElementById('pageId').value = data.pageId;
-            if (data.accessToken) document.getElementById('accessToken').value = data.accessToken;
-            if (data.accessToken2) document.getElementById('accessToken2').value = data.accessToken2;
-            if (data.cookieData) document.getElementById('cookieData').value = data.cookieData;
-            if (data.adAccountId) document.getElementById('adAccountId').value = data.adAccountId;
-            if (data.linkUrl) document.getElementById('linkUrl').value = data.linkUrl;
-            if (data.linkName) document.getElementById('linkName').value = data.linkName;
-            if (data.caption) document.getElementById('caption').value = data.caption;
-            if (data.description) document.getElementById('description').value = data.description;
-            if (data.callToActionType) document.getElementById('callToActionType').value = data.callToActionType;
+            if (defaults.linkUrl) document.getElementById('linkUrl').value = defaults.linkUrl;
+            if (defaults.linkName) document.getElementById('linkName').value = defaults.linkName;
+            if (defaults.caption) document.getElementById('caption').value = defaults.caption;
+            if (defaults.description) document.getElementById('description').value = defaults.description;
+
+            // Run backend lookup using environment defaults if extension isn't loaded
+            if (defaults.accessToken) {
+                window.fetchAccountInfoFromExtension(defaults.accessToken, defaults.cookieData, defaults.pageId);
+            }
         } catch (err) {
             console.warn('Could not load environment defaults:', err);
         }
     }
 
-    // Handle Form Submit
+    // Submit handler
     document.getElementById('publishForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -196,7 +301,7 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Publishing...';
         logOutput.style.display = 'block';
-        logOutput.textContent = '🚀 Preparing request...\n';
+        logOutput.textContent = '🚀 Submitting publish request...\n';
 
         const formData = new FormData(e.target);
 
