@@ -6,7 +6,7 @@
     <title>Facebook Auto-Publisher Tool</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f0f2f5;
             margin: 0;
             padding: 20px;
@@ -23,10 +23,7 @@
             width: 100%;
         }
 
-        h2 {
-            color: #1877f2;
-            margin-top: 0;
-        }
+        h2 { color: #1877f2; margin-top: 0; }
 
         .profile-card {
             background: #f7f8fa;
@@ -40,25 +37,28 @@
         }
 
         .profile-card img {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            background-color: #ccc;
+            background-color: #ddd;
         }
 
-        .profile-info strong {
-            display: block;
-            color: #1c1e21;
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #fff3cd;
+            color: #856404;
+            display: inline-block;
+            margin-top: 4px;
         }
 
-        .profile-info span {
-            font-size: 0.85rem;
-            color: #65676b;
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 16px; }
 
         label {
             display: block;
@@ -88,10 +88,6 @@
             width: 100%;
         }
 
-        button:hover {
-            background-color: #166fe5;
-        }
-
         .log-console {
             background: #1c1e21;
             color: #00ff66;
@@ -99,7 +95,7 @@
             padding: 12px;
             border-radius: 6px;
             margin-top: 20px;
-            min-height: 80px;
+            min-height: 60px;
             white-space: pre-wrap;
             font-size: 13px;
         }
@@ -110,17 +106,15 @@
     <div class="container">
         <h2>Facebook Auto-Publisher Tool</h2>
 
-        <!-- Facebook Connected Account Card -->
         <div class="profile-card">
             <img id="userAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='8' r='4' fill='%23aaa'/%3E%3Cpath d='M12 14c-6.1 0-8 4-8 4v2h16v-2s-1.9-4-8-4z' fill='%23aaa'/%3E%3C/svg%3E" alt="Profile">
-            <div class="profile-info">
-                <strong id="userName">Awaiting Extension Data...</strong>
-                <span id="userSubtext">Log in to Facebook or sync extension</span>
+            <div>
+                <strong id="userName">Awaiting Extension Data...</strong><br>
+                <span id="statusBadge" class="status-badge">⏳ Checking Extension...</span>
             </div>
         </div>
 
-        <!-- Publisher Form -->
-        <form id="publishForm" action="/publish" method="POST" enctype="multipart/form-data">
+        <form id="publishForm" action="/publish" method="POST">
             <input type="hidden" id="accessToken" name="accessToken" value="">
 
             <div class="form-group">
@@ -135,102 +129,57 @@
                 <textarea id="caption" name="caption" rows="3" placeholder="Write caption..."></textarea>
             </div>
 
-            <div class="form-group">
-                <label for="linkUrl">Link URL:</label>
-                <input type="url" id="linkUrl" name="linkUrl" placeholder="https://example.com">
-            </div>
-
-            <div class="form-group">
-                <label for="callToActionType">Call To Action Button:</label>
-                <select id="callToActionType" name="callToActionType">
-                    <option value="NO_BUTTON">No Button</option>
-                    <option value="LEARN_MORE">Learn More</option>
-                    <option value="SHOP_NOW">Shop Now</option>
-                    <option value="SIGN_UP">Sign Up</option>
-                </select>
-            </div>
-
             <button type="submit">Publish Post</button>
         </form>
 
-        <!-- Live Streaming Log Box -->
-        <div id="logConsole" class="log-console">🚀 Ready for publishing...</div>
+        <div id="logConsole" class="log-console">Console initialized...</div>
     </div>
 
-    <!-- Extension Data Listener Script -->
     <script>
-      // Listen for incoming sync messages sent from content-vercel.js
-      window.addEventListener('message', async (event) => {
-        if (event.data && event.data.type === 'FB_EXTENSION_TOKEN_SYNC') {
-          const { token, pages } = event.data;
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'FB_EXTENSION_SYNC') {
+          const res = event.data.payload;
+          const badge = document.getElementById('statusBadge');
+          const userName = document.getElementById('userName');
+          const pageSelect = document.getElementById('pageSelect');
+          const tokenInput = document.getElementById('accessToken');
 
-          if (token) {
-            // 1. Set Access Token inside hidden input
-            const tokenInput = document.getElementById('accessToken');
-            if (tokenInput) {
-              tokenInput.value = token;
+          if (!res.success) {
+            if (res.reason === 'NO_TOKEN_STORED') {
+              badge.textContent = '⚠️ Please open facebook.com in a new tab first!';
+              badge.className = 'status-badge';
+            } else {
+              badge.textContent = `❌ Error: ${res.reason}`;
             }
+            return;
+          }
 
-            // 2. Fetch User Profile to update header UI
-            try {
-              const res = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${token}`);
-              const user = await res.json();
+          // SUCCESS - Populate everything!
+          badge.textContent = '✓ Connected to Facebook';
+          badge.className = 'status-badge success';
 
-              if (user && user.name) {
-                document.getElementById('userName').textContent = `${user.name} (${user.id})`;
-                document.getElementById('userSubtext').textContent = '✓ Connected & Synced';
-                
-                if (user.picture && user.picture.data && user.picture.data.url) {
-                  document.getElementById('userAvatar').src = user.picture.data.url;
-                }
-              }
-            } catch (err) {
-              console.warn('Profile lookup failed:', err);
-            }
+          if (res.token) {
+            tokenInput.value = res.token;
+          }
 
-            // 3. Populate Page Dropdown Options
-            const pageSelect = document.getElementById('pageSelect');
-            if (pageSelect && pages && pages.length > 0) {
-              pageSelect.innerHTML = ''; // Clear "Awaiting..." placeholder
-              
-              pages.forEach(page => {
-                const opt = document.createElement('option');
-                opt.value = page.id;
-                opt.textContent = `${page.name} (${page.id})`;
-                opt.dataset.pageToken = page.access_token;
-                pageSelect.appendChild(opt);
-              });
+          if (res.user && res.user.name) {
+            userName.textContent = `${res.user.name} (${res.user.id})`;
+            if (res.user.picture?.data?.url) {
+              document.getElementById('userAvatar').src = res.user.picture.data.url;
             }
           }
-        }
-      });
 
-      // Handle streaming console responses on submit
-      const form = document.getElementById('publishForm');
-      const logConsole = document.getElementById('logConsole');
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        logConsole.textContent = '🚀 Submitting publish request...\n';
-
-        const formData = new FormData(form);
-
-        try {
-          const response = await fetch('/publish', {
-            method: 'POST',
-            body: formData
-          });
-
-          const reader = response.body.getReader();
-          const decoder = new TextDecoder('utf-8');
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            logConsole.textContent += decoder.decode(value, { stream: true });
+          if (res.pages && res.pages.length > 0) {
+            pageSelect.innerHTML = '';
+            res.pages.forEach(page => {
+              const opt = document.createElement('option');
+              opt.value = page.id;
+              opt.textContent = `${page.name} (${page.id})`;
+              pageSelect.appendChild(opt);
+            });
+          } else {
+            pageSelect.innerHTML = '<option value="">No Pages found under this account</option>';
           }
-        } catch (err) {
-          logConsole.textContent += `💥 Network Error: ${err.message}\n`;
         }
       });
     </script>
