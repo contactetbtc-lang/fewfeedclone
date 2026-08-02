@@ -7,8 +7,8 @@ router.post('/api/account-info', async (req, res) => {
         const token = accessToken || process.env.ACCESS_TOKEN;
 
         let profileName = 'Facebook User';
-        let pages = [];
         let userId = null;
+        let pages = [];
 
         if (cookieData) {
             const match = cookieData.match(/c_user=(\d+)/);
@@ -40,13 +40,16 @@ router.post('/api/account-info', async (req, res) => {
             }
         }
 
-        // Include Timeline and add a helpful option if no token is present
+        // Always ensure Personal Timeline is available, plus any discovered pages or active user target
         const finalPages = [
             { id: 'me', name: userId ? `Personal Profile / Timeline (${userId})` : 'Personal Profile / Timeline' }
         ];
 
         if (pages.length > 0) {
             finalPages.push(...pages);
+        } else if (userId) {
+            // Fallback option so you can test publishing or see active association
+            finalPages.push({ id: userId, name: `Facebook Profile Page (${userId})` });
         }
 
         res.json({ 
