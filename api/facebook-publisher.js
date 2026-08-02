@@ -1,74 +1,105 @@
 // api/facebook-publisher.js
-module.exports = async function facebookPublisher(req, res) {
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
+  }
+
   try {
-    const body = req.body || {};
-    const files = req.files || [];
+    const { 
+      pageId, 
+      accessToken, 
+      message, 
+      link, 
+      title, 
+      callToAction, 
+      imageUrl 
+    } = req.body;
 
-    const accessToken = body.accessToken || body.access_token || body.token || body.accessTokenInput;
-    const cookieData = body.cookieData || body.cookie_data || body.cookies;
-    const pageId = body.pageId || body.page_id || body.selectedPage;
-    const caption = body.caption || body.message || '';
-    const websiteUrl = body.websiteUrl || body.website_url || body.link || '';
-
+    // 1. Validation Checks
     if (!accessToken) {
-      return res.status(400).json({ error: 'Missing Access Token.' });
+      return res.status(400).json({ error: 'Missing Access Token. Please sync with the extension.' });
     }
 
-    if (!pageId || pageId === 'me') {
+    if (!pageId) {
+      return res.status(400).json({ error: 'Please select a Facebook Page from the dropdown.' });
+    }
+
+    // 2. Block Personal Profile IDs
+    if (pageId === 'me' || pageId.startsWith('615905')) { 
       return res.status(400).json({ 
-        error: 'Please select a specific Facebook Page from the dropdown list.' 
+        error: 'Personal Profile posting is deprecated by Facebook. You must select a Facebook Page ID to publish.' 
       });
     }
 
-    // Direct Image Upload (Using extracted token directly)
-    if (files && files.length > 0) {
-      const imageFile = files[0];
-      const formData = new FormData();
-      
-      const blob = new Blob([imageFile.buffer], { type: imageFile.mimetype });
-      formData.append('source', blob, imageFile.originalname);
-      formData.append('message', caption);
-      formData.append('access_token', accessToken);
+    // 3. Dynamically target the selected Facebook Page Endpoint
+    const GRAPH_API_URL = `https://graph.facebook.com/v18.0/${pageId}/feed`;
 
-      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${pageId}/photos`, {
-        method: 'POST',
-        headers: cookieData ? { 'Cookie': cookieData } : {},
-        body: formData
-      });
+    // 4. Construct Payload
+    const payload = {
+      message: message || '',
+      access_token: accessToken,
+    };
 
-      const fbData = await fbResponse.json();
-
-      if (fbData.error) {
-        return res.status(400).json({ error: fbData.error.message || 'Facebook Photo Upload Error' });
-      }
-
-      return res.status(200).json({ success: true, result: fbData });
+    if (link) {
+      payload.link = link;
     }
 
-    // Direct Text / Link Post (Using extracted token directly)
-    const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
+    if (title) {
+      payload.name = title;
+    }
+
+    if (imageUrl) {
+      payload.picture = imageUrl;
+    }
+
+    if (callToAction && link) {
+      payload.call_to_action = {
+        type: callToAction.toUpperCase(),
+        value: { link: link }
+      };
+    }
+
+    // 5. Send POST request to Meta Graph API
+    const fbResponse = await fetch(GRAPH_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(cookieData ? { 'Cookie': cookieData } : {})
       },
-      body: JSON.stringify({
-        message: caption,
-        link: websiteUrl || undefined,
-        access_token: accessToken
-      })
+      body: JSON.stringify(payload),
     });
 
-    const fbData = await fbResponse.json();
+    const data = await fbResponse.json();
 
-    if (fbData.error) {
-      return res.status(400).json({ error: fbData.error.message || 'Facebook API Error' });
+    if (data.error) {
+      console.error('Meta API Error:', data.error);
+      return res.status(400).json({ 
+        error: data.error.message || 'Failed to publish to Facebook Page.',
+        fb_error_code: data.error.code 
+      });
     }
 
-    return res.status(200).json({ success: true, result: fbData });
+    return res.status(200).json({
+      success: true,
+      id: data.id,
+      message: 'Post successfully published to Facebook Page!'
+    });
 
   } catch (error) {
-    console.error('Publishing Error:', error);
-    return res.status(500).json({ error: error.message || 'Server execution failed' });
+    console.error('Server Publishing Error:', error);
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
-};
+}
