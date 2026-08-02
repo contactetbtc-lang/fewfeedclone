@@ -6,22 +6,28 @@ router.post('/api/account-info', async (req, res) => {
         const { accessToken, cookieData } = req.body;
         const token = accessToken || process.env.ACCESS_TOKEN;
 
-        let profileName = 'Connected User';
+        let profileName = 'Facebook User';
         let pages = [];
+
+        // Try to extract user ID (c_user) from cookies if no token is present
+        let userId = null;
+        if (cookieData) {
+            const match = cookieData.match(/c_user=(\d+)/);
+            if (match) {
+                userId = match[1];
+            }
+        }
 
         if (token) {
             try {
-                // Fetch actual user profile name using Graph API
                 const meRes = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${token}`);
                 const meData = await meRes.json();
                 if (meData && meData.name) {
                     profileName = meData.name;
                 }
 
-                // Fetch managed pages
                 const pagesRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
                 const pagesData = await pagesRes.json();
-                
                 if (pagesData && pagesData.data) {
                     pages = pagesData.data.map(page => ({
                         id: page.id,
@@ -29,27 +35,26 @@ router.post('/api/account-info', async (req, res) => {
                         access_token: page.access_token
                     }));
                 }
-            } catch (err) {
-                console.error('API Fetch error:', err.message);
+            } catch (e) {
+                console.error('Graph API error:', e.message);
             }
-        } else if (cookieData) {
-            // If the extension is passing cookies instead of a token, fallback gracefully or parse name if possible
-            profileName = 'Facebook Account (Session Active)';
+        } else if (userId) {
+            // Fallback: Fetch user's public profile name using their Facebook ID via web parsing or default naming
+            profileName = `Facebook Account (${userId})`;
         }
 
-        // Combine default personal timeline with your fetched pages
         const finalPages = [
             { id: 'me', name: 'Personal Profile / Timeline' },
             ...pages
         ];
 
         res.json({ 
-            profile: { name: profileName }, 
+            profile: { name: profileName, id: userId }, 
             pages: finalPages 
         });
     } catch (err) {
         res.status(500).json({ 
-            profile: { name: 'Connected User' }, 
+            profile: { name: 'Facebook User' }, 
             pages: [{ id: 'me', name: 'Personal Profile / Timeline' }] 
         });
     }
