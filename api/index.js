@@ -6,19 +6,19 @@ router.post('/api/account-info', async (req, res) => {
         const { accessToken, cookieData } = req.body;
         const token = accessToken || process.env.ACCESS_TOKEN;
 
+        let profileName = 'Connected User';
         let pages = [];
-        let profileName = 'Facebook User';
 
         if (token) {
             try {
-                // Fetch the user's main profile name
+                // Fetch actual user profile name using Graph API
                 const meRes = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${token}`);
                 const meData = await meRes.json();
                 if (meData && meData.name) {
                     profileName = meData.name;
                 }
 
-                // Fetch the pages managed by this user account
+                // Fetch managed pages
                 const pagesRes = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
                 const pagesData = await pagesRes.json();
                 
@@ -29,12 +29,15 @@ router.post('/api/account-info', async (req, res) => {
                         access_token: page.access_token
                     }));
                 }
-            } catch (apiErr) {
-                console.error('Error querying Facebook Graph API:', apiErr.message);
+            } catch (err) {
+                console.error('API Fetch error:', err.message);
             }
+        } else if (cookieData) {
+            // If the extension is passing cookies instead of a token, fallback gracefully or parse name if possible
+            profileName = 'Facebook Account (Session Active)';
         }
 
-        // Combine Personal Profile option with any fetched managed pages
+        // Combine default personal timeline with your fetched pages
         const finalPages = [
             { id: 'me', name: 'Personal Profile / Timeline' },
             ...pages
@@ -46,7 +49,7 @@ router.post('/api/account-info', async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ 
-            profile: { name: 'Facebook User' }, 
+            profile: { name: 'Connected User' }, 
             pages: [{ id: 'me', name: 'Personal Profile / Timeline' }] 
         });
     }
