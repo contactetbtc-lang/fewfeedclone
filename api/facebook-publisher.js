@@ -1,90 +1,39 @@
-class FacebookPublisher {
-    constructor({ accessToken, cookieData }) {
-        this.accessToken = accessToken;
-        this.cookieData = cookieData;
+// api/facebook-publisher.js
+module.exports = async function facebookPublisher(req, res) {
+  try {
+    const { pageId, accessToken, cookieData, caption, cardTitle, websiteUrl } = req.body || {};
+
+    // Basic Validation
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Missing Access Token.' });
     }
 
-    async getUserProfile() {
-        if (this.accessToken) {
-            try {
-                const res = await fetch(`https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${this.accessToken}`);
-                const data = await res.json();
-                if (data && data.name) return { id: data.id, name: data.name };
-            } catch (e) {}
-        }
+    const targetId = (pageId && pageId !== 'me') ? pageId : 'me';
 
-        if (this.cookieData) {
-            try {
-                const res = await fetch('https://www.facebook.com/adsmanager/manage/', {
-                    headers: { 'cookie': this.cookieData }
-                });
-                const html = await res.text();
-                const matchName = html.match(/"NAME":"([^"]+)"/);
-                if (matchName) {
-                    return { name: JSON.parse(`"${matchName[1]}"`) };
-                }
-            } catch (e) {}
-        }
+    // Post to Facebook Graph API
+    const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${targetId}/feed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookieData ? { 'Cookie': cookieData } : {})
+      },
+      body: JSON.stringify({
+        message: caption || '',
+        link: websiteUrl || undefined,
+        access_token: accessToken
+      })
+    });
 
-        return { name: 'Connected Facebook User' };
+    const fbData = await fbResponse.json();
+
+    if (fbData.error) {
+      return res.status(400).json({ error: fbData.error.message || 'Facebook API Error' });
     }
 
-    async getUserPages() {
-        let token = this.accessToken;
+    return res.status(200).json({ success: true, result: fbData });
 
-        if (!token && this.cookieData) {
-            try {
-                const res = await fetch('https://www.facebook.com/adsmanager/manage/', {
-                    headers: { 'cookie': this.cookieData }
-                });
-                const html = await res.text();
-                const match = html.match(/(EAAB[A-Za-z0-9]+)/) || html.match(/(EAA[A-Za-z0-9]+)/);
-                if (match) token = match[1];
-            } catch (e) {}
-        }
-
-        if (!token) {
-            // Return an empty array instead of throwing so the app doesn't crash
-            return [];
-        }
-
-        try {
-            const res = await fetch(`https://graph.facebook.com/v18.0/me/accounts?access_token=${token}`);
-            const data = await res.json();
-            if (data.data) return data.data;
-        } catch (e) {}
-
-        return [];
-    }
-
-    async publishPost({ pageId, caption, linkName, linkUrl, callToActionType, imageFile }) {
-        let token = this.accessToken;
-        const pages = await this.getUserPages();
-        const targetPage = pages.find(p => p.id === pageId);
-        
-        if (targetPage && targetPage.access_token) {
-            token = targetPage.access_token;
-        }
-
-        const formData = new URLSearchParams();
-        formData.append('message', caption || '');
-        if (linkUrl) formData.append('link', linkUrl);
-        if (linkName) formData.append('name', linkName);
-        if (callToActionType) formData.append('call_to_action', JSON.stringify({ type: callToActionType, value: { link: linkUrl } }));
-        formData.append('access_token', token || this.accessToken);
-
-        const res = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await res.json();
-        if (result.error) {
-            throw new Error(result.error.message);
-        }
-
-        return result;
-    }
-}
-
-module.exports = { FacebookPublisher };
+  } catch (error) {
+    console.error('Publishing Error:', error);
+    return res.status(500).json({ error: error.message || 'Server execution failed' });
+  }
+};
