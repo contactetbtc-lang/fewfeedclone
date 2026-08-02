@@ -4,23 +4,35 @@ module.exports = async function facebookPublisher(req, res) {
     const body = req.body || {};
     const files = req.files || [];
 
-    // Extract access token regardless of parameter casing/source
-    const accessToken = body.accessToken || body.access_token || body.token || body.accessTokenInput;
+    const userAccessToken = body.accessToken || body.access_token || body.token || body.accessTokenInput;
     const cookieData = body.cookieData || body.cookie_data || body.cookies;
     const pageId = body.pageId || body.page_id || body.selectedPage;
     const caption = body.caption || body.message || '';
     const websiteUrl = body.websiteUrl || body.website_url || body.link || '';
 
-    if (!accessToken) {
+    if (!userAccessToken) {
+      return res.status(400).json({ error: 'Missing Access Token.' });
+    }
+
+    if (!pageId || pageId === 'me') {
       return res.status(400).json({ 
-        error: 'Missing Access Token.',
-        receivedKeys: Object.keys(body)
+        error: 'Facebook does not allow automated posting to Personal Timelines. Please select a Facebook Page from the dropdown.' 
       });
     }
 
-    const targetId = (pageId && pageId !== 'me') ? pageId : 'me';
+    // Step 1: Obtain the specific Page Access Token
+    let pageAccessToken = userAccessToken;
+    try {
+      const pageRes = await fetch(`https://graph.facebook.com/v18.0/${pageId}?fields=access_token&access_token=${userAccessToken}`);
+      const pageData = await pageRes.json();
+      if (pageData.access_token) {
+        pageAccessToken = pageData.access_token;
+      }
+    } catch (e) {
+      console.log('Using default token fallback');
+    }
 
-    // If an image file was uploaded
+    // Step 2: Post Image or Link/Text using Page Access Token
     if (files && files.length > 0) {
       const imageFile = files[0];
       const formData = new FormData();
@@ -28,9 +40,9 @@ module.exports = async function facebookPublisher(req, res) {
       const blob = new Blob([imageFile.buffer], { type: imageFile.mimetype });
       formData.append('source', blob, imageFile.originalname);
       formData.append('message', caption);
-      formData.append('access_token', accessToken);
+      formData.append('access_token', pageAccessToken);
 
-      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${targetId}/photos`, {
+      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${pageId}/photos`, {
         method: 'POST',
         headers: cookieData ? { 'Cookie': cookieData } : {},
         body: formData
@@ -45,8 +57,8 @@ module.exports = async function facebookPublisher(req, res) {
       return res.status(200).json({ success: true, result: fbData });
     }
 
-    // Standard Text / Link Post
-    const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${targetId}/feed`, {
+    // Standard Link/Text Post
+    const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +67,7 @@ module.exports = async function facebookPublisher(req, res) {
       body: JSON.stringify({
         message: caption,
         link: websiteUrl || undefined,
-        access_token: accessToken
+        access_token: pageAccessToken
       })
     });
 
