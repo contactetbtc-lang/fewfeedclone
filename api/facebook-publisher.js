@@ -27,12 +27,10 @@ module.exports = async (req, res) => {
       message: message || '',
     });
 
-    // Append valid public website URL if provided
-    if (link && link.startsWith('http') && !link.includes('vercel.com')) {
+    if (link && link.startsWith('http')) {
       params.append('link', link);
     }
 
-    // If an image URL is present from Supabase, switch endpoint to /photos
     if (imageUrl) {
       endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
       params.append('url', imageUrl);
@@ -49,7 +47,7 @@ module.exports = async (req, res) => {
     try {
       data = JSON.parse(text);
     } catch (e) {
-      return res.status(500).json({ success: false, error: 'Facebook returned non-JSON response: ' + text });
+      return res.status(500).json({ success: false, error: 'Facebook non-JSON response: ' + text });
     }
 
     if (fbRes.ok && (data.id || data.post_id)) {
