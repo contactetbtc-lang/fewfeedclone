@@ -1,81 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Auto-Publisher Tool</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Auto-Publisher Tool</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #1877f2; }
+    .account-badge { background: #e7f3ff; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #333; }
+    input[type="text"], select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    textarea { height: 70px; resize: vertical; }
+    .btn-publish { width: 100%; background: #1877f2; color: white; border: none; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    .btn-publish:hover { background: #166fe5; }
+    .synced-data { background: #f0f0f0; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 12px; }
+    details summary { font-weight: bold; cursor: pointer; }
+  </style>
 </head>
 <body>
 
-    <!-- Your existing body HTML structure goes here -->
+  <div class="container">
+    <h2>Facebook Auto-Publisher Tool</h2>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const publishBtn = document.querySelector('button');
+    <div class="account-badge">
+      <div style="font-weight: bold; color: #1877f2;">f</div>
+      <div>
+        <strong>Connected Account ID:</strong><br>
+        <span id="account-id">100023525146491</span>
+      </div>
+    </div>
 
-        if (publishBtn) {
-            publishBtn.addEventListener('click', async (e) => {
-                e.preventDefault();
+    <div class="form-group">
+      <label for="page-select">Select Target Facebook Page:</label>
+      <select id="page-select">
+        <option value="100132885889772">Cute Pets (100132885889772)</option>
+      </select>
+    </div>
 
-                const pageSelect = document.querySelector('select');
-                const pageId = pageSelect ? pageSelect.value : '';
+    <div class="form-group">
+      <label for="post-message">Post Message / Text:</label>
+      <textarea id="post-message" placeholder="Write your post content here..."></textarea>
+    </div>
 
-                const tokenInput = document.querySelector('input[placeholder*="EAAB"]') || 
-                                   document.querySelectorAll('input[type="text"]')[3] ||
-                                   document.querySelector('input');
-                const accessToken = tokenInput ? tokenInput.value : '';
+    <div class="form-group">
+      <label for="cta-button">Card Buttons / Call to Action:</label>
+      <select id="cta-button">
+        <option value="">No Button</option>
+        <option value="LEARN_MORE">Learn More</option>
+        <option value="SHOP_NOW">Shop Now</option>
+      </select>
+    </div>
 
-                const captionTextarea = document.querySelector('textarea');
-                const message = captionTextarea ? captionTextarea.value : '';
+    <div class="form-group">
+      <label for="card-title">Card 1 title</label>
+      <input type="text" id="card-title" placeholder="Title">
+    </div>
 
-                const linkInput = document.querySelector('input[placeholder*="http"]') || 
-                                  document.querySelector('input[value*="http"]');
-                const link = linkInput ? linkInput.value : '';
+    <div class="form-group">
+      <label for="website-url">Website Url</label>
+      <input type="text" id="website-url" placeholder="https://">
+    </div>
 
-                if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
-                    alert("Please select a Facebook Page from the dropdown menu first!");
-                    return;
-                }
+    <div class="form-group">
+      <label for="upload-image">Upload Image:</label>
+      <input type="file" id="upload-image">
+    </div>
 
-                if (!accessToken) {
-                    alert("Missing Access Token. Make sure your Facebook tab is open.");
-                    return;
-                }
+    <button type="button" class="btn-publish">Publish Post</button>
 
-                let consoleBox = document.getElementById('status-console');
-                if (!consoleBox) {
-                    consoleBox = document.createElement('pre');
-                    consoleBox.id = 'status-console';
-                    consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
-                    publishBtn.parentNode.appendChild(consoleBox);
-                }
+    <div class="synced-data">
+      <details open>
+        <summary>Extension Synced Data (Hidden)</summary>
+        <div style="margin-top: 8px;">
+          <label>Access Token:</label>
+          <input type="text" value="EAABsBCS1iHgBSOETlMyLnrg" placeholder="EAAB..." readonly>
+        </div>
+      </details>
+    </div>
+  </div>
 
-                consoleBox.style.color = "#0f0";
-                consoleBox.textContent = "🚀 Submitting publish request...";
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+      const publishBtn = document.querySelector('button');
 
-                try {
-                    const res = await fetch('/api/facebook-publisher', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pageId, accessToken, message, link })
-                    });
+      if (publishBtn) {
+          publishBtn.addEventListener('click', async (e) => {
+              e.preventDefault();
 
-                    const data = await res.json();
+              const pageSelect = document.querySelector('select');
+              const pageId = pageSelect ? pageSelect.value : '';
 
-                    if (res.ok && data.success) {
-                        consoleBox.style.color = "#0f0";
-                        consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
-                    } else {
-                        consoleBox.style.color = "#ff4d4d";
-                        consoleBox.textContent = JSON.stringify(data);
-                    }
-                } catch (err) {
-                    consoleBox.style.color = "#ff4d4d";
-                    consoleBox.textContent = `❌ Request failed: ${err.message}`;
-                }
-            });
-        }
-    });
-    </script>
+              const tokenInput = document.querySelector('input[placeholder*="EAAB"]') || 
+                                 document.querySelectorAll('input[type="text"]')[3] ||
+                                 document.querySelector('input');
+              const accessToken = tokenInput ? tokenInput.value : '';
+
+              const captionTextarea = document.querySelector('textarea');
+              const message = captionTextarea ? captionTextarea.value : '';
+
+              const linkInput = document.querySelector('input[placeholder*="http"]') || 
+                                document.querySelector('input[value*="http"]');
+              const link = linkInput ? linkInput.value : '';
+
+              if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
+                  alert("Please select a Facebook Page from the dropdown menu first!");
+                  return;
+              }
+
+              if (!accessToken) {
+                  alert("Missing Access Token. Make sure your Facebook tab is open.");
+                  return;
+              }
+
+              let consoleBox = document.getElementById('status-console');
+              if (!consoleBox) {
+                  consoleBox = document.createElement('pre');
+                  consoleBox.id = 'status-console';
+                  consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
+                  publishBtn.parentNode.appendChild(consoleBox);
+              }
+
+              consoleBox.style.color = "#0f0";
+              consoleBox.textContent = "🚀 Submitting publish request...";
+
+              try {
+                  const res = await fetch('/api/facebook-publisher', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ pageId, accessToken, message, link })
+                  });
+
+                  const data = await res.json();
+
+                  if (res.ok && data.success) {
+                      consoleBox.style.color = "#0f0";
+                      consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
+                  } else {
+                      consoleBox.style.color = "#ff4d4d";
+                      consoleBox.textContent = JSON.stringify(data);
+                  }
+              } catch (err) {
+                  consoleBox.style.color = "#ff4d4d";
+                  consoleBox.textContent = `❌ Request failed: ${err.message}`;
+              }
+          });
+      }
+  });
+  </script>
 </body>
 </html>
