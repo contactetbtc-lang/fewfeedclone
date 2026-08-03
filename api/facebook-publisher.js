@@ -6,9 +6,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Safely parse request body across different environments
+    // Read and parse raw body safely for Vercel
     let body = req.body;
-    
     if (!body) {
       return res.status(400).json({ success: false, error: 'Request body is empty' });
     }
@@ -62,6 +61,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: data.error?.message || 'Facebook API error' });
     }
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Internal Function Error: ' + err.message });
+    return res.status(500).json({ success: false, error: 'Server Crash: ' + err.message });
   }
 };
