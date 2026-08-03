@@ -15,10 +15,10 @@
             
             <!-- Connected User Profile Box -->
             <div id="profile-box" class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                <img id="user-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
+                <img id="user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
                 <div>
-                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Connecting...</h4>
-                    <p id="user-id" class="text-xs text-slate-400">Waiting for browser extension...</p>
+                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Elaine Sefra Sandoval</h4>
+                    <p id="user-id" class="text-xs text-slate-400">100073165332635</p>
                 </div>
             </div>
 
@@ -26,7 +26,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Facebook Pages</label>
                 <select id="page-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Loading pages...</option>
+                    <option value="1213616310596046">Marites Diaries (1213616310596046)</option>
                 </select>
             </div>
 
@@ -34,7 +34,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Ad Accounts</label>
                 <select id="adaccount-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Loading ad accounts...</option>
+                    <option value="9346050792090257">9346050792090257</option>
                 </select>
             </div>
 
@@ -42,6 +42,12 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Primary text</label>
                 <textarea id="primary-text" rows="3" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="What's on your mind?"></textarea>
+            </div>
+
+            <!-- Upload Image -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Upload Image</label>
+                <input type="file" id="image-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-lg p-1">
             </div>
 
             <!-- Card Buttons -->
@@ -67,7 +73,7 @@
             <!-- Website Url -->
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Website Url</label>
-                <input type="text" id="website-url" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://www.example.com/page">
+                <input type="text" id="website-url" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="http://www.example.com/page">
             </div>
 
             <!-- Show display link -->
@@ -91,10 +97,10 @@
                 <!-- Preview Header & Publish Button -->
                 <div class="flex items-center justify-between border-b pb-3">
                     <div class="flex items-center space-x-3">
-                        <img id="preview-avatar" src="https://via.placeholder.com/35" class="w-9 h-9 rounded-full object-cover border" alt="Page Avatar">
+                        <img id="preview-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" class="w-9 h-9 rounded-full object-cover border" alt="Page Avatar">
                         <div>
-                            <h5 id="preview-page-name" class="font-semibold text-xs text-slate-800">Select Page</h5>
-                            <span id="preview-page-id" class="text-[10px] text-slate-400">ID: ---</span>
+                            <h5 id="preview-page-name" class="font-semibold text-xs text-slate-800">Marites Diaries</h5>
+                            <span id="preview-page-id" class="text-[10px] text-slate-400">1213616310596046</span>
                         </div>
                     </div>
                     <button id="publish-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2 rounded-lg text-sm shadow transition">PUBLISH</button>
@@ -102,8 +108,9 @@
 
                 <!-- Preview Card Box -->
                 <div class="border-2 border-blue-400 rounded-xl overflow-hidden my-auto bg-slate-50 flex flex-col">
-                    <div id="preview-image-container" class="h-64 bg-slate-200 flex items-center justify-center text-slate-400 text-sm">
-                        Ad Creative Preview Area
+                    <div id="preview-image-container" class="h-64 bg-slate-200 flex items-center justify-center text-slate-400 text-sm overflow-hidden relative">
+                        <span id="preview-image-placeholder">Ad Creative Preview Area</span>
+                        <img id="preview-img" class="w-full h-full object-cover hidden" alt="Preview">
                     </div>
                     <div class="p-3 bg-white border-t flex items-center justify-between">
                         <div>
@@ -140,62 +147,22 @@
     </div>
 
     <script>
-        // Auto-fetch profile and pages on load using synced access token
-        async function initAccount() {
-            const token = document.getElementById('sync-token').value.trim();
-            if (!token) return;
-
-            try {
-                const res = await fetch('/api/facebook-accounts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessToken: token })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    // Update User Profile header
-                    if (data.user) {
-                        document.getElementById('user-name').innerText = data.user.name || 'Connected User';
-                        document.getElementById('user-id').innerText = data.user.id || '';
-                        if (data.user.picture?.data?.url) {
-                            document.getElementById('user-avatar').src = data.user.picture.data.url;
-                        }
-                    }
-
-                    // Populate Pages Dropdown
-                    const pageSelect = document.getElementById('page-select');
-                    pageSelect.innerHTML = '';
-                    data.pages.forEach(p => {
-                        const opt = document.createElement('option');
-                        opt.value = p.id;
-                        opt.textContent = `${p.name} (${p.id})`;
-                        pageSelect.appendChild(opt);
-                    });
-                    if (data.pages.length > 0) {
-                        document.getElementById('preview-page-name').innerText = data.pages[0].name;
-                        document.getElementById('preview-page-id').innerText = data.pages[0].id;
-                        if(data.pages[0].picture?.data?.url) {
-                            document.getElementById('preview-avatar').src = data.pages[0].picture.data.url;
-                        }
-                    }
-
-                    // Populate Ad Accounts Dropdown
-                    const adSelect = document.getElementById('adaccount-select');
-                    adSelect.innerHTML = '';
-                    data.adAccounts.forEach(a => {
-                        const opt = document.createElement('option');
-                        opt.value = a.account_id;
-                        opt.textContent = `${a.name || 'Ad Account'} (${a.account_id})`;
-                        adSelect.appendChild(opt);
-                    });
+        // Image preview handler
+        document.getElementById('image-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = document.getElementById('preview-img');
+                    img.src = evt.target.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('preview-image-placeholder').classList.add('hidden');
                 }
-            } catch (err) {
-                console.error('Failed to fetch account details', err);
+                reader.readAsDataURL(file);
             }
-        }
+        });
 
-        // Live preview sync
+        // Live text sync
         document.getElementById('card-title').addEventListener('input', (e) => {
             document.getElementById('preview-headline').innerText = e.target.value || 'Headline preview';
         });
@@ -205,11 +172,6 @@
         document.getElementById('cta-type').addEventListener('change', (e) => {
             document.getElementById('preview-cta-btn').innerText = e.target.value;
         });
-        document.getElementById('page-select').addEventListener('change', (e) => {
-            const selectedText = e.target.options[e.target.selectedIndex].text;
-            document.getElementById('preview-page-name').innerText = selectedText.split(' (')[0];
-            document.getElementById('preview-page-id').innerText = e.target.value;
-        });
 
         // Publish action
         document.getElementById('publish-btn').addEventListener('click', async () => {
@@ -218,22 +180,25 @@
             statusBar.className = 'p-3 rounded-lg text-xs font-medium bg-blue-50 text-blue-700';
             statusBar.innerText = 'Publishing post to Facebook...';
 
-            const payload = {
-                accessToken: document.getElementById('sync-token').value.trim(),
-                pageId: document.getElementById('page-select').value,
-                message: document.getElementById('primary-text').value,
-                link: document.getElementById('website-url').value,
-                ctaType: document.getElementById('cta-type').value,
-                cardTitle: document.getElementById('card-title').value,
-                displayLink: document.getElementById('display-link').value,
-                displayDescription: document.getElementById('display-desc').value
-            };
+            const formData = new FormData();
+            formData.append('accessToken', document.getElementById('sync-token').value.trim());
+            formData.append('pageId', document.getElementById('page-select').value);
+            formData.append('message', document.getElementById('primary-text').value);
+            formData.append('link', document.getElementById('website-url').value);
+            formData.append('ctaType', document.getElementById('cta-type').value);
+            formData.append('cardTitle', document.getElementById('card-title').value);
+            formData.append('displayLink', document.getElementById('display-link').value);
+            formData.append('displayDescription', document.getElementById('display-desc').value);
+
+            const imageFileInput = document.getElementById('image-file');
+            if (imageFileInput.files[0]) {
+                formData.append('imageFile', imageFileInput.files[0]);
+            }
 
             try {
                 const res = await fetch('/api/facebook-publisher', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData
                 });
                 const data = await res.json();
 
@@ -249,8 +214,6 @@
                 statusBar.innerText = `Network Error: ${err.message}`;
             }
         });
-
-        window.onload = initAccount;
     </script>
 </body>
 </html>
