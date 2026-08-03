@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Ad Publisher</title>
+    <title>Facebook Ad Publisher - Dynamic Detection</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col items-center p-4">
@@ -17,7 +17,7 @@
             <div id="profile-box" class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <img id="user-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
                 <div>
-                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Detecting user...</h4>
+                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Detecting account...</h4>
                     <p id="user-id" class="text-xs text-slate-400">---</p>
                 </div>
             </div>
@@ -26,7 +26,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Facebook Pages</label>
                 <select id="page-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="">Fetching your pages...</option>
+                    <option value="">Fetching pages...</option>
                 </select>
             </div>
 
@@ -129,29 +129,37 @@
 
     </div>
 
-    <!-- Hidden Extension Data Sync Helper -->
+    <!-- Hidden Extension Data Sync Helper with Refresh Button -->
     <div class="w-full max-w-7xl mt-6 p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-500">
         <details open>
-            <summary class="cursor-pointer font-semibold text-slate-600">Extension Synced Data (Hidden)</summary>
-            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <summary class="cursor-pointer font-semibold text-slate-600 flex justify-between items-center">
+                <span>Extension Synced Data (Hidden)</span>
+                <button id="refresh-account-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">Detect Current Account</button>
+            </summary>
+            <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label class="block font-medium mb-1">Access Token:</label>
-                    <input type="text" id="sync-token" class="w-full p-2 border rounded bg-slate-50" value="EAABsbCS1iHgBSOfkwZC37MUnKb7RYg5JQQ2qrWZAjCZAKIXca">
+                    <input type="text" id="sync-token" class="w-full p-2 border rounded bg-slate-50" placeholder="Paste active access token here">
                 </div>
                 <div>
-                    <label class="block font-medium mb-1">Cookie Data:</label>
-                    <input type="text" id="sync-cookie" class="w-full p-2 border rounded bg-slate-50" value="c_user=100023525146491; dpr=0.8999999761581421;">
+                    <label class="block font-medium mb-1">Cookie Data (c_user=...):</label>
+                    <input type="text" id="sync-cookie" class="w-full p-2 border rounded bg-slate-50" placeholder="c_user=YOUR_ACTIVE_ID;">
                 </div>
             </div>
         </details>
     </div>
 
     <script>
-        // Fetch real account profile using token & cookie data
         async function fetchRealUserData() {
             const token = document.getElementById('sync-token').value.trim();
             const cookie = document.getElementById('sync-cookie').value.trim();
-            if (!token) return;
+            
+            if (!token) {
+                document.getElementById('user-name').innerText = 'Please enter Access Token';
+                return;
+            }
+
+            document.getElementById('user-name').innerText = 'Detecting active profile...';
 
             try {
                 const res = await fetch('/api/facebook-accounts', {
@@ -162,12 +170,14 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // Update User Profile with real fetched info
+                    // Update User Profile dynamically with whichever account matches the token/cookie
                     if (data.user) {
-                        document.getElementById('user-name').innerText = data.user.name || 'Connected User';
-                        document.getElementById('user-id').innerText = data.user.id || 'Active Account';
+                        document.getElementById('user-name').innerText = data.user.name || 'Active Account';
+                        document.getElementById('user-id').innerText = data.user.id || 'Connected ID';
                         if (data.user.picture?.data?.url) {
                             document.getElementById('user-avatar').src = data.user.picture.data.url;
+                        } else {
+                            document.getElementById('user-avatar').src = 'https://via.placeholder.com/40';
                         }
                     }
 
@@ -186,7 +196,9 @@
                             }
                         });
                     } else {
-                        pageSelect.innerHTML = `<option value="">No pages found for this token</option>`;
+                        pageSelect.innerHTML = `<option value="">No pages found for this account</option>`;
+                        document.getElementById('preview-page-name').innerText = 'No Page Available';
+                        document.getElementById('preview-page-id').innerText = 'ID: ---';
                     }
 
                     // Populate Ad Accounts dynamically
@@ -200,13 +212,22 @@
                             adSelect.appendChild(opt);
                         });
                     } else {
-                        adSelect.innerHTML = `<option value="">No ad accounts available</option>`;
+                        adSelect.innerHTML = `<option value="">No ad accounts found for this profile</option>`;
                     }
+                } else {
+                    document.getElementById('user-name').innerText = 'Failed to load profile';
                 }
             } catch (err) {
-                console.error('Error fetching real user data:', err);
+                console.error('Detection error:', err);
+                document.getElementById('user-name').innerText = 'Connection error';
             }
         }
+
+        // Trigger detection when clicking the button
+        document.getElementById('refresh-account-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchRealUserData();
+        });
 
         // Image Full-View Preview Handler
         document.getElementById('image-file').addEventListener('change', function(e) {
@@ -280,8 +301,6 @@
                 statusBar.innerText = `Network Error: ${err.message}`;
             }
         });
-
-        window.onload = fetchRealUserData;
     </script>
 </body>
 </html>
