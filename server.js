@@ -8,10 +8,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 // API Endpoint for Facebook Publisher
 app.post('/api/facebook-publisher', async (req, res) => {
   try {
-    const { pageId, accessToken, message, link, imageUrl } = req.body || {};
+    const { pageId, accessToken, message, imageUrl } = req.body || {};
+    let { link } = req.body || {};
 
     if (!pageId || !accessToken) {
       return res.status(400).json({ success: false, error: 'Missing Page ID or Access Token' });
+    }
+
+    // Automatically fix URL formatting if missing http/https
+    if (link && typeof link === 'string' && link.trim() !== '') {
+      link = link.trim();
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+        link = 'https://' + link;
+      }
     }
 
     let endpoint = `https://graph.facebook.com/v19.0/${pageId}/feed`;
@@ -20,7 +29,7 @@ app.post('/api/facebook-publisher', async (req, res) => {
       message: message || '',
     });
 
-    if (link && typeof link === 'string' && link.startsWith('http')) {
+    if (link && link.startsWith('http')) {
       params.append('link', link);
     }
 
