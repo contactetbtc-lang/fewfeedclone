@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function getCookieValue(cookieString, cookieName) {
-  if (!cookieString) return null;
+  if (!cookieString || cookieString.includes('YOUR_ACTIVE_ID')) return null;
   const match = cookieString.match(new RegExp('(^| )' + cookieName + '=([^;]+)'));
   return match ? match[2] : null;
 }
@@ -19,23 +19,18 @@ app.post('/api/facebook-accounts', async (req, res) => {
     const { accessToken, cookieData } = req.body;
     if (!accessToken) return res.status(400).json({ error: 'Missing access token' });
 
-    const cUserId = getCookieValue(cookieData, 'c_user');
-    let userData = { name: `Facebook User (${cUserId || 'Connected'})`, id: cUserId || 'Active Token' };
+    let cUserId = getCookieValue(cookieData, 'c_user');
+    let userData = { name: 'Active Facebook User', id: cUserId || 'Connected Token' };
 
-    // Try fetching real profile name/picture
+    // Try fetching real profile via /me
     try {
-      const profileUrl = cUserId 
-        ? `https://graph.facebook.com/v19.0/${cUserId}?fields=id,name,picture&access_token=${accessToken}`
-        : `https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${accessToken}`;
-      
-      const userRes = await fetch(profileUrl);
+      const userRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${accessToken}`);
       const userJson = await userRes.json();
       if (!userJson.error) {
         userData = userJson;
+        if (!cUserId) cUserId = userJson.id;
       }
-    } catch (e) {
-      console.log('Profile fetch fallback used');
-    }
+    } catch (e) {}
 
     // Fetch pages
     let pages = [];
@@ -45,7 +40,7 @@ app.post('/api/facebook-accounts', async (req, res) => {
       pages = pagesData.data || [];
     } catch (e) {}
 
-    // Fetch ad accounts (with fallback if permissions are limited)
+    // Fetch ad accounts directly from token
     let adAccounts = [];
     try {
       const adAccountsRes = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=account_id,name&access_token=${accessToken}`);
@@ -53,9 +48,12 @@ app.post('/api/facebook-accounts', async (req, res) => {
       adAccounts = adAccountsData.data || [];
     } catch (e) {}
 
-    // If no ad accounts returned via API, provide the user's ID as a default ad account option
-    if (adAccounts.length === 0 && cUserId) {
-      adAccounts.push({ account_id: cUserId, name: `Personal Ad Account (${cUserId})` });
+    // Fallback ad account if none returned
+    if (adAccounts.length === 0) {
+      adAccounts.push({ 
+        account_id: cUserId || 'self', 
+        name: cUserId ? `Personal Ad Account (${cUserId})` : 'Default Ad Account' 
+      });
     }
 
     res.json({
