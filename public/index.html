@@ -118,7 +118,6 @@
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
-        <!-- Extension script looks for elements or classes to inject options -->
         <option value="">Awaiting automatic detection...</option>
       </select>
     </div>
@@ -159,18 +158,17 @@
         <summary>Extension Synced Data (Hidden)</summary>
         <div style="margin-top: 8px;">
           <label>Access Token:</label>
-          <input type="text" id="access-token-input" value="EAABsbCS1iHgBSEAiTqxbhbSsDAEBa0os2WAZAcVIVYGQbTrpXNzwhdTD5vud6rilDZCC" readonly>
+          <input type="text" id="access-token-input" placeholder="EAAB..." readonly>
         </div>
         <div style="margin-top: 8px;">
           <label>Cookie Data:</label>
-          <input type="text" id="cookie-data-input" value="c_user=100023525146491; dpr=0.8999999761581421; wd=1366x641; presence=C%78" readonly>
+          <input type="text" id="cookie-data-input" placeholder="c_user=..." readonly>
         </div>
       </details>
     </div>
   </div>
 
   <script>
-  // Fallback observer to let your extension communicate or listen properly if it inspects mutations
   document.addEventListener('DOMContentLoaded', () => {
       const publishBtn = document.querySelector('.btn-publish');
 
