@@ -5,33 +5,39 @@ module.exports = async (req, res) => {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch (e) {
-      body = {};
-    }
-  }
-
-  const { pageId, accessToken, message, link } = body || {};
-
-  if (!pageId || !accessToken) {
-    return res.status(400).json({ success: false, error: 'Missing Page ID or Access Token' });
-  }
-
   try {
+    let body = req.body;
+    
+    // Handle stringified bodies if sent from certain fetch configurations
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    }
+
+    const { pageId, accessToken, message, link, imageUrl } = body || {};
+
+    if (!pageId || !accessToken) {
+      return res.status(400).json({ success: false, error: 'Missing Page ID or Access Token' });
+    }
+
+    let endpoint = `https://graph.facebook.com/v19.0/${pageId}/feed`;
     const params = new URLSearchParams({
       access_token: accessToken,
       message: message || '',
     });
 
-    // Only append link if it's a valid external URL (prevents Vercel/dashboard URL crashes)
-    if (link && link.startsWith('http') && !link.includes('vercel.com')) {
+    // If an image URL is provided, post to the /photos endpoint instead of /feed
+    if (imageUrl) {
+      endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
+      params.append('url', imageUrl);
+    } else if (link && link.startsWith('http') && !link.includes('vercel.com')) {
       params.append('link', link);
     }
 
-    const fbRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+    const fbRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString()
@@ -45,8 +51,8 @@ module.exports = async (req, res) => {
       return res.status(500).json({ success: false, error: 'Facebook returned non-JSON response: ' + text });
     }
 
-    if (fbRes.ok && data.id) {
-      return res.status(200).json({ success: true, postId: data.id });
+    if (fbRes.ok && (data.id || data.post_id)) {
+      return res.status(200).json({ success: true, postId: data.id || data.post_id });
     } else {
       return res.status(400).json({ success: false, error: data.error?.message || 'Facebook API error' });
     }
