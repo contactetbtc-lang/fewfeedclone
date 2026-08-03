@@ -118,6 +118,7 @@
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
+        <!-- Extension script looks for elements or classes to inject options -->
         <option value="">Awaiting automatic detection...</option>
       </select>
     </div>
@@ -169,6 +170,7 @@
   </div>
 
   <script>
+  // Fallback observer to let your extension communicate or listen properly if it inspects mutations
   document.addEventListener('DOMContentLoaded', () => {
       const publishBtn = document.querySelector('.btn-publish');
 
