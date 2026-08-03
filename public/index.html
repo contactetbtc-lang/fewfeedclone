@@ -110,7 +110,7 @@
     <div class="account-badge">
       <div style="font-weight: bold; color: #1877f2; font-size: 18px; background: #fff; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">f</div>
       <div>
-        <strong>Connected Account ID: <span id="account-id"></span></strong><br>
+        <strong>Connected Account ID: <span id="account-id">Detecting...</span></strong><br>
         <span style="font-size: 12px; color: #666;" id="account-status">Connecting to browser extension...</span>
       </div>
     </div>
@@ -231,9 +231,10 @@
                       consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
                   } else {
                       consoleBox.style.color = "#ff4d4d";
-                      consoleBox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
+                      consolebox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
                   }
               } catch (err) {
+                  let consoleBox = document.getElementById('status-console');
                   consoleBox.style.color = "#ff4d4d";
                   consoleBox.textContent = `❌ Request failed: ${err.message}`;
               }
