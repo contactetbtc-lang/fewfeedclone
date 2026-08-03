@@ -1,105 +1,59 @@
-// api/facebook-publisher.js
-export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed. Use POST.' });
-  }
-
-  try {
-    const { 
-      pageId, 
-      accessToken, 
-      message, 
-      link, 
-      title, 
-      callToAction, 
-      imageUrl 
-    } = req.body;
-
-    // 1. Validation Checks
-    if (!accessToken) {
-      return res.status(400).json({ error: 'Missing Access Token. Please sync with the extension.' });
+module.exports = async (req, res) => {
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    if (!pageId) {
-      return res.status(400).json({ error: 'Please select a Facebook Page from the dropdown.' });
+    const { pageId, accessToken, message, link } = req.body;
+
+    if (!pageId || !accessToken) {
+        return res.status(400).json({ error: 'Missing pageId or accessToken' });
     }
 
-    // 2. Block Personal Profile IDs
-    if (pageId === 'me' || pageId.startsWith('615905')) { 
-      return res.status(400).json({ 
-        error: 'Personal Profile posting is deprecated by Facebook. You must select a Facebook Page ID to publish.' 
-      });
+    try {
+        // 1. Exchange User Access Token (EAAB...) for the Page-Specific Token
+        const accountsRes = await fetch(
+            `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+        );
+        const accountsData = await accountsRes.json();
+
+        let pageAccessToken = accessToken;
+        if (accountsData?.data) {
+            const matchedPage = accountsData.data.find(p => p.id === pageId);
+            if (matchedPage?.access_token) {
+                pageAccessToken = matchedPage.access_token;
+            }
+        }
+
+        // 2. Prepare payload to publish to the Facebook Page feed
+        const postParams = new URLSearchParams({
+            access_token: pageAccessToken,
+            message: message || ''
+        });
+
+        if (link && link.trim() !== '') {
+            postParams.append('link', link);
+        }
+
+        // 3. Post to Facebook Graph API
+        const fbResponse = await fetch(`https://graph.facebook.com/v18.0/${pageId}/feed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: postParams
+        });
+
+        const fbData = await fbResponse.json();
+
+        if (fbData.error) {
+            return res.status(400).json({ 
+                error: fbData.error.message || "Invalid request.", 
+                fb_error_code: fbData.error.code || 1 
+            });
+        }
+
+        return res.status(200).json({ success: true, postId: fbData.id });
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message, fb_error_code: 1 });
     }
-
-    // 3. Dynamically target the selected Facebook Page Endpoint
-    const GRAPH_API_URL = `https://graph.facebook.com/v18.0/${pageId}/feed`;
-
-    // 4. Construct Payload
-    const payload = {
-      message: message || '',
-      access_token: accessToken,
-    };
-
-    if (link) {
-      payload.link = link;
-    }
-
-    if (title) {
-      payload.name = title;
-    }
-
-    if (imageUrl) {
-      payload.picture = imageUrl;
-    }
-
-    if (callToAction && link) {
-      payload.call_to_action = {
-        type: callToAction.toUpperCase(),
-        value: { link: link }
-      };
-    }
-
-    // 5. Send POST request to Meta Graph API
-    const fbResponse = await fetch(GRAPH_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await fbResponse.json();
-
-    if (data.error) {
-      console.error('Meta API Error:', data.error);
-      return res.status(400).json({ 
-        error: data.error.message || 'Failed to publish to Facebook Page.',
-        fb_error_code: data.error.code 
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      id: data.id,
-      message: 'Post successfully published to Facebook Page!'
-    });
-
-  } catch (error) {
-    console.error('Server Publishing Error:', error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
-  }
-}
+};

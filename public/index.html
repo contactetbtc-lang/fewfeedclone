@@ -197,5 +197,69 @@
         }
     });
 </script>
-</body>
-</html>
+document.addEventListener('DOMContentLoaded', () => {
+    const publishBtn = document.querySelector('button');
+
+    if (publishBtn) {
+        publishBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+
+            const pageSelect = document.querySelector('select');
+            const pageId = pageSelect ? pageSelect.value : '';
+
+const tokenInput = document.querySelector('input[placeholder*="EAAB"]') ||
+                   document.querySelectorAll('input[type="text"]')[3] ||
+                   document.querySelector('input');
+const accessToken = tokenInput ? tokenInput.value : '';
+            const captionTextarea = document.querySelector('textarea');
+            const message = captionTextarea ? captionTextarea.value : '';
+
+ const linkInput = document.querySelector('input[placeholder*="http"]') || 
+                  document.querySelector('input[value*="http"]');
+            const link = linkInput ? linkInput.value : '';
+
+            if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
+                alert("Please select a Facebook Page from the dropdown menu first!");
+                return;
+            }
+
+            if (!accessToken) {
+                alert("Missing Access Token. Make sure your Facebook tab is open.");
+                return;
+            }
+
+            let consoleBox = document.getElementById('status-console');
+            if (!consoleBox) {
+                consoleBox = document.createElement('pre');
+                consoleBox.id = 'status-console';
+                consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
+                publishBtn.parentNode.appendChild(consoleBox);
+            }
+
+            consoleBox.style.color = "#0f0";
+            consoleBox.textContent = "🚀 Submitting publish request...";
+
+            try {
+                const res = await fetch('/api/facebook-publisher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pageId, accessToken, message, link })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    consoleBox.style.color = "#0f0";
+                    consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
+                } else {
+                    consoleBox.style.color = "#ff4d4d";
+                    consoleBox.textContent = JSON.stringify(data);
+                }
+            } catch (err) {
+                consoleBox.style.color = "#ff4d4d";
+                consoleBox.textContent = `❌ Request failed: ${err.message}`;
+            }
+        });
+    }
+});
+</script>
