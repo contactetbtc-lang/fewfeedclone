@@ -7,6 +7,10 @@ module.exports = async (req, res) => {
 
   try {
     let body = req.body;
+    if (!body) {
+      return res.status(400).json({ success: false, error: 'Empty request body' });
+    }
+
     if (typeof body === 'string') {
       try {
         body = JSON.parse(body);
@@ -15,7 +19,7 @@ module.exports = async (req, res) => {
       }
     }
 
-    const { pageId, accessToken, message, link, imageUrl } = body || {};
+    const { pageId, accessToken, message, link, imageUrl } = body;
 
     if (!pageId || !accessToken) {
       return res.status(400).json({ success: false, error: 'Missing Page ID or Access Token' });
@@ -47,7 +51,7 @@ module.exports = async (req, res) => {
     try {
       data = JSON.parse(text);
     } catch (e) {
-      return res.status(500).json({ success: false, error: 'Facebook non-JSON response: ' + text });
+      return res.status(500).json({ success: false, error: 'Facebook returned non-JSON: ' + text });
     }
 
     if (fbRes.ok && (data.id || data.post_id)) {
@@ -56,6 +60,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: data.error?.message || 'Facebook API error' });
     }
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'Server exception: ' + err.message });
   }
 };
