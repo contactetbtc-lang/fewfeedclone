@@ -110,15 +110,15 @@
     <div class="account-badge">
       <div style="font-weight: bold; color: #1877f2; font-size: 18px; background: #fff; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">f</div>
       <div>
-        <strong>Connected Account ID: <span id="account-id">Detecting...</span></strong><br>
-        <span style="font-size: 12px; color: #666;" id="account-status">Connecting to browser extension...</span>
+        <strong>Connected Account ID: <span id="account-id">Not Connected</span></strong><br>
+        <span style="font-size: 12px; color: #666;" id="account-status">Waiting for browser extension...</span>
       </div>
     </div>
 
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
-        <option value="" id="default-page-option">Awaiting automatic detection...</option>
+        <option value="" id="default-page-option">No pages detected yet...</option>
       </select>
     </div>
 
@@ -188,7 +188,7 @@
               const linkInput = document.getElementById('website-url');
               const link = linkInput ? linkInput.value : '';
 
-              if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
+              if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting") || pageId.includes("detected")) {
                   alert("Please select a Facebook Page from the dropdown menu first!");
                   return;
               }
