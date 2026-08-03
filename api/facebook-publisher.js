@@ -26,7 +26,8 @@ module.exports = async (req, res) => {
       message: message || '',
     });
 
-    if (link) {
+    // Only append link if it's a valid external URL (prevents Vercel/dashboard URL crashes)
+    if (link && link.startsWith('http') && !link.includes('vercel.com')) {
       params.append('link', link);
     }
 
