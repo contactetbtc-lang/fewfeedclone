@@ -1,279 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facebook Auto-Publisher Tool</title>
-  <!-- Load Supabase JS Client via CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    body {
-      background-color: #f4f6f9;
-      margin: 0;
-      padding: 15px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-    }
-    .container {
-      width: 100%;
-      max-width: 480px;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    h2 {
-      margin-top: 0;
-      color: #1877f2;
-      font-size: 20px;
-    }
-    .account-badge {
-      background: #e7f3ff;
-      padding: 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 5px;
-      color: #333;
-    }
-    input[type="text"], select, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #cccccc;
-      border-radius: 6px;
-      font-size: 14px;
-      background-color: #fff;
-    }
-    textarea {
-      height: 80px;
-      resize: vertical;
-    }
-    .btn-publish {
-      width: 100%;
-      background: #1877f2;
-      color: #ffffff;
-      border: none;
-      padding: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.2s ease;
-    }
-    .btn-publish:hover {
-      background: #166fe5;
-    }
-    .synced-data {
-      background: #f0f0f0;
-      border-radius: 6px;
-      padding: 10px;
-      margin-top: 20px;
-      font-size: 12px;
-    }
-    details summary {
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #status-console {
-      background: #111111;
-      padding: 12px;
-      border-radius: 6px;
-      font-family: monospace;
-      margin-top: 15px;
-      white-space: pre-wrap;
-      word-break: break-all;
-      font-size: 13px;
-      color: #0f0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Ad Publisher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col items-center p-4">
 
-  <div class="container">
-    <h2>Facebook Auto-Publisher Tool</h2>
+    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Left Sidebar Controls -->
+        <div class="md:col-span-5 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            
+            <!-- Connected User Profile Box -->
+            <div id="profile-box" class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <img id="user-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
+                <div>
+                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Connecting...</h4>
+                    <p id="user-id" class="text-xs text-slate-400">Waiting for browser extension...</p>
+                </div>
+            </div>
 
-    <div class="account-badge">
-      <div style="font-weight: bold; color: #1877f2; font-size: 18px; background: #fff; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">f</div>
-      <div>
-        <strong>Connected Account ID: <span id="account-id">Not Connected</span></strong><br>
-        <span style="font-size: 12px; color: #666;" id="account-status">Waiting for browser extension...</span>
-      </div>
-    </div>
+            <!-- Facebook Pages -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Facebook Pages</label>
+                <select id="page-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option>Loading pages...</option>
+                </select>
+            </div>
 
-    <div class="form-group">
-      <label for="page-select">Select Target Facebook Page:</label>
-      <select id="page-select">
-        <option value="" id="default-page-option">No pages detected yet...</option>
-      </select>
-    </div>
+            <!-- Ad Accounts -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Ad Accounts</label>
+                <select id="adaccount-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option>Loading ad accounts...</option>
+                </select>
+            </div>
 
-    <div class="form-group">
-      <label for="post-message">Post Message / Text:</label>
-      <textarea id="post-message" placeholder="Write caption..."></textarea>
-    </div>
+            <!-- Primary Text -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Primary text</label>
+                <textarea id="primary-text" rows="3" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="What's on your mind?"></textarea>
+            </div>
 
-    <div class="form-group">
-      <label for="cta-button">Card Buttons / Call To Action:</label>
-      <select id="cta-button">
-        <option value="LEARN_MORE">Learn More</option>
-        <option value="SHOP_NOW">Shop Now</option>
-        <option value="">No Button</option>
-      </select>
-    </div>
+            <!-- Card Buttons -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Card Buttons</label>
+                <select id="cta-type" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="No Button">No Button</option>
+                    <option value="Like Page">Like Page</option>
+                    <option value="Learn More" selected>Learn More</option>
+                    <option value="Shop Now">Shop Now</option>
+                    <option value="Join Group">Join Group</option>
+                    <option value="Book Travel">Book Travel</option>
+                    <option value="Contact Us">Contact Us</option>
+                </select>
+            </div>
 
-    <div class="form-group">
-      <label for="card-title">Card 1 title</label>
-      <input type="text" id="card-title" placeholder="Write a short headline">
-    </div>
+            <!-- Card 1 title (Headline) -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Card 1 title</label>
+                <input type="text" id="card-title" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Write a short headline">
+            </div>
 
-    <div class="form-group">
-      <label for="website-url">Website Url</label>
-      <input type="text" id="website-url" placeholder="http://www.example.com/page">
-    </div>
+            <!-- Website Url -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Website Url</label>
+                <input type="text" id="website-url" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="https://www.example.com/page">
+            </div>
 
-    <div class="form-group">
-      <label for="upload-image">Upload Image:</label>
-      <input type="file" id="upload-image" accept="image/*">
-    </div>
+            <!-- Show display link -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Show display link (Basic +)</label>
+                <input type="text" id="display-link" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="facebook.com">
+            </div>
 
-    <button type="button" class="btn-publish">Publish Post</button>
+            <!-- Description -->
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Put display link description (Basic +)</label>
+                <input type="text" id="display-desc" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Description">
+            </div>
 
-    <div class="synced-data">
-      <details open>
-        <summary>Extension Synced Data (Hidden)</summary>
-        <div style="margin-top: 8px;">
-          <label>Access Token:</label>
-          <input type="text" id="access-token-input" placeholder="EAAB..." readonly>
         </div>
-        <div style="margin-top: 8px;">
-          <label>Cookie Data:</label>
-          <input type="text" id="cookie-data-input" placeholder="c_user=..." readonly>
+
+        <!-- Right Live Preview & Publish Area -->
+        <div class="md:col-span-7 space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-full min-h-[550px]">
+                
+                <!-- Preview Header & Publish Button -->
+                <div class="flex items-center justify-between border-b pb-3">
+                    <div class="flex items-center space-x-3">
+                        <img id="preview-avatar" src="https://via.placeholder.com/35" class="w-9 h-9 rounded-full object-cover border" alt="Page Avatar">
+                        <div>
+                            <h5 id="preview-page-name" class="font-semibold text-xs text-slate-800">Select Page</h5>
+                            <span id="preview-page-id" class="text-[10px] text-slate-400">ID: ---</span>
+                        </div>
+                    </div>
+                    <button id="publish-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-2 rounded-lg text-sm shadow transition">PUBLISH</button>
+                </div>
+
+                <!-- Preview Card Box -->
+                <div class="border-2 border-blue-400 rounded-xl overflow-hidden my-auto bg-slate-50 flex flex-col">
+                    <div id="preview-image-container" class="h-64 bg-slate-200 flex items-center justify-center text-slate-400 text-sm">
+                        Ad Creative Preview Area
+                    </div>
+                    <div class="p-3 bg-white border-t flex items-center justify-between">
+                        <div>
+                            <span id="preview-display-link" class="text-xs text-slate-400 block">facebook.com</span>
+                            <h4 id="preview-headline" class="font-semibold text-sm text-slate-800">Headline preview</h4>
+                        </div>
+                        <button id="preview-cta-btn" class="bg-slate-100 border border-slate-200 text-slate-700 px-4 py-1.5 rounded text-xs font-medium">Learn More</button>
+                    </div>
+                </div>
+
+                <!-- Status Feedback Bar -->
+                <div id="status-bar" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+
+            </div>
         </div>
-      </details>
+
     </div>
-  </div>
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-      // Initialize Supabase with your project credentials
-      const supabaseUrl = 'https://xhxvxkekhbjgbtsfsmzb.supabase.co';
-      const supabaseKey = 'sb_publishable_wQd-Kq8cJSb4USivjU2jvg_VwgUs5dA';
-      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    <!-- Hidden Extension Data Sync Helper -->
+    <div class="w-full max-w-6xl mt-6 p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-500">
+        <details>
+            <summary class="cursor-pointer font-semibold text-slate-600">Extension Synced Data (Hidden)</summary>
+            <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-medium mb-1">Access Token:</label>
+                    <input type="text" id="sync-token" class="w-full p-2 border rounded bg-slate-50" value="EAABsbCS1iHgBSOfkwZC37MUnKb7RYg5JQQ2qrWZAjCZAKIXca">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Cookie Data:</label>
+                    <input type="text" id="sync-cookie" class="w-full p-2 border rounded bg-slate-50" value="c_user=100023525146491;">
+                </div>
+            </div>
+        </details>
+    </div>
 
-      const publishBtn = document.querySelector('.btn-publish');
+    <script>
+        // Auto-fetch profile and pages on load using synced access token
+        async function initAccount() {
+            const token = document.getElementById('sync-token').value.trim();
+            if (!token) return;
 
-      if (publishBtn) {
-          publishBtn.addEventListener('click', async (e) => {
-              e.preventDefault();
+            try {
+                const res = await fetch('/api/facebook-accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accessToken: token })
+                });
+                const data = await res.json();
 
-              const pageSelect = document.getElementById('page-select');
-              const pageId = pageSelect ? pageSelect.value : '';
+                if (data.success) {
+                    // Update User Profile header
+                    if (data.user) {
+                        document.getElementById('user-name').innerText = data.user.name || 'Connected User';
+                        document.getElementById('user-id').innerText = data.user.id || '';
+                        if (data.user.picture?.data?.url) {
+                            document.getElementById('user-avatar').src = data.user.picture.data.url;
+                        }
+                    }
 
-              const tokenInput = document.getElementById('access-token-input');
-              const accessToken = tokenInput ? tokenInput.value : '';
+                    // Populate Pages Dropdown
+                    const pageSelect = document.getElementById('page-select');
+                    pageSelect.innerHTML = '';
+                    data.pages.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = `${p.name} (${p.id})`;
+                        pageSelect.appendChild(opt);
+                    });
+                    if (data.pages.length > 0) {
+                        document.getElementById('preview-page-name').innerText = data.pages[0].name;
+                        document.getElementById('preview-page-id').innerText = data.pages[0].id;
+                        if(data.pages[0].picture?.data?.url) {
+                            document.getElementById('preview-avatar').src = data.pages[0].picture.data.url;
+                        }
+                    }
 
-              const captionTextarea = document.getElementById('post-message');
-              const message = captionTextarea ? captionTextarea.value : '';
+                    // Populate Ad Accounts Dropdown
+                    const adSelect = document.getElementById('adaccount-select');
+                    adSelect.innerHTML = '';
+                    data.adAccounts.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.account_id;
+                        opt.textContent = `${a.name || 'Ad Account'} (${a.account_id})`;
+                        adSelect.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to fetch account details', err);
+            }
+        }
 
-              const linkInput = document.getElementById('website-url');
-              const link = linkInput ? linkInput.value : '';
+        // Live preview sync
+        document.getElementById('card-title').addEventListener('input', (e) => {
+            document.getElementById('preview-headline').innerText = e.target.value || 'Headline preview';
+        });
+        document.getElementById('display-link').addEventListener('input', (e) => {
+            document.getElementById('preview-display-link').innerText = e.target.value || 'facebook.com';
+        });
+        document.getElementById('cta-type').addEventListener('change', (e) => {
+            document.getElementById('preview-cta-btn').innerText = e.target.value;
+        });
+        document.getElementById('page-select').addEventListener('change', (e) => {
+            const selectedText = e.target.options[e.target.selectedIndex].text;
+            document.getElementById('preview-page-name').innerText = selectedText.split(' (')[0];
+            document.getElementById('preview-page-id').innerText = e.target.value;
+        });
 
-              const fileInput = document.getElementById('upload-image');
+        // Publish action
+        document.getElementById('publish-btn').addEventListener('click', async () => {
+            const statusBar = document.getElementById('status-bar');
+            statusBar.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-emerald-100', 'text-emerald-700');
+            statusBar.className = 'p-3 rounded-lg text-xs font-medium bg-blue-50 text-blue-700';
+            statusBar.innerText = 'Publishing post to Facebook...';
 
-              if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting") || pageId.includes("detected")) {
-                  alert("Please select a Facebook Page from the dropdown menu first!");
-                  return;
-              }
+            const payload = {
+                accessToken: document.getElementById('sync-token').value.trim(),
+                pageId: document.getElementById('page-select').value,
+                message: document.getElementById('primary-text').value,
+                link: document.getElementById('website-url').value,
+                ctaType: document.getElementById('cta-type').value,
+                cardTitle: document.getElementById('card-title').value,
+                displayLink: document.getElementById('display-link').value,
+                displayDescription: document.getElementById('display-desc').value
+            };
 
-              if (!accessToken) {
-                  alert("Missing Access Token. Make sure your extension is connected.");
-                  return;
-              }
+            try {
+                const res = await fetch('/api/facebook-publisher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
 
-              let consoleBox = document.getElementById('status-console');
-              if (!consoleBox) {
-                  consoleBox = document.createElement('pre');
-                  consoleBox.id = 'status-console';
-                  publishBtn.parentNode.appendChild(consoleBox);
-              }
+                if (data.success) {
+                    statusBar.className = 'p-3 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700';
+                    statusBar.innerText = `Success! Post ID: ${data.postId}`;
+                } else {
+                    statusBar.className = 'p-3 rounded-lg text-xs font-medium bg-red-100 text-red-700';
+                    statusBar.innerText = `Error: ${data.error}`;
+                }
+            } catch (err) {
+                statusBar.className = 'p-3 rounded-lg text-xs font-medium bg-red-100 text-red-700';
+                statusBar.innerText = `Network Error: ${err.message}`;
+            }
+        });
 
-              consoleBox.style.color = "#0f0";
-              consoleBox.textContent = "🚀 Uploading image and submitting publish request...";
-
-              try {
-                  let imageUrl = '';
-
-                  // 1. Upload local file to Supabase Storage bucket ('facebook-uploads') if selected
-                  if (fileInput && fileInput.files && fileInput.files[0]) {
-                      const file = fileInput.files[0];
-                      const fileName = `fb-post-${Date.now()}-${file.name}`;
-
-                      const { data: uploadData, error: uploadError } = await supabase.storage
-                          .from('facebook-uploads')
-                          .upload(fileName, file);
-
-                      if (uploadError) {
-                          throw new Error('Image storage upload failed: ' + uploadError.message);
-                      }
-
-                      // 2. Retrieve public URL for Facebook to download
-                      const { data: publicUrlData } = supabase.storage
-                          .from('facebook-uploads')
-                          .getPublicUrl(fileName);
-
-                      imageUrl = publicUrlData.publicUrl;
-                  }
-
-                  // 3. Send payload to backend route including the Supabase image URL
-                  const res = await fetch('/api/facebook-publisher', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ pageId, accessToken, message, link, imageUrl })
-                  });
-
-                  const contentType = res.headers.get("content-type");
-                  let data;
-                  if (contentType && contentType.indexOf("application/json") !== -1) {
-                      data = await res.json();
-                  } else {
-                      const text = await res.text();
-                      const match = text.match(/<title>(.*?)<\/title>/i);
-                      const title = match ? match[1] : "Server Error";
-                      throw new Error(`Endpoint returned HTML (${title}). Check your backend /api/facebook-publisher route.`);
-                  }
-
-                  if (res.ok && data.success) {
-                      consoleBox.style.color = "#0f0";
-                      consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
-                  } else {
-                      consoleBox.style.color = "#ff4d4d";
-                      consoleBox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
-                  }
-              } catch (err) {
-                  let consoleBox = document.getElementById('status-console');
-                  consoleBox.style.color = "#ff4d4d";
-                  consoleBox.textContent = `❌ Request failed: ${err.message}`;
-              }
-          });
-      }
-  });
-  </script>
+        window.onload = initAccount;
+    </script>
 </body>
 </html>
