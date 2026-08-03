@@ -158,7 +158,7 @@
         <summary>Extension Synced Data (Hidden)</summary>
         <div style="margin-top: 8px;">
           <label>Access Token:</label>
-          <input type="text" id="access-token-input" placeholder="EAAB..." readonly>
+          <input type="text" id="access-token-input" placeholder="EAAB..." data-token="">
         </div>
       </details>
     </div>
@@ -166,25 +166,22 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-      const publishBtn = document.querySelector('.btn-publish') || document.querySelector('button');
+      const publishBtn = document.querySelector('.btn-publish');
 
       if (publishBtn) {
           publishBtn.addEventListener('click', async (e) => {
               e.preventDefault();
 
-              const pageSelect = document.getElementById('page-select') || document.querySelector('select');
+              const pageSelect = document.getElementById('page-select');
               const pageId = pageSelect ? pageSelect.value : '';
 
-              const tokenInput = document.getElementById('access-token-input') || 
-                                 document.querySelector('input[placeholder*="EAAB"]') || 
-                                 document.querySelector('input[readonly]');
-              const accessToken = tokenInput ? tokenInput.value : '';
+              const tokenInput = document.getElementById('access-token-input');
+              const accessToken = tokenInput ? (tokenInput.value || tokenInput.getAttribute('data-token')) : '';
 
-              const captionTextarea = document.getElementById('post-message') || document.querySelector('textarea');
+              const captionTextarea = document.getElementById('post-message');
               const message = captionTextarea ? captionTextarea.value : '';
 
-              const linkInput = document.getElementById('website-url') || 
-                                document.querySelector('input[placeholder*="http"]');
+              const linkInput = document.getElementById('website-url');
               const link = linkInput ? linkInput.value : '';
 
               if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
@@ -192,8 +189,8 @@
                   return;
               }
 
-              if (!accessToken) {
-                  alert("Missing Access Token. Make sure your Facebook tab is open.");
+              if (!accessToken || accessToken.includes("EAAB...")) {
+                  alert("Missing Access Token. Make sure your Chrome extension is connected and active.");
                   return;
               }
 
