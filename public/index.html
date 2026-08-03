@@ -4,262 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facebook Auto-Publisher Tool</title>
-    <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 650px; width: 100%; }
-        h2 { margin-top: 0; color: #1877f2; }
-        .profile-card { display: flex; align-items: center; gap: 12px; background: #f7f8fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e4e6eb; }
-        .profile-card img { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background-color: #e4e6eb; }
-        .profile-info { display: flex; flex-direction: column; }
-        .profile-name { font-weight: bold; color: #050505; }
-        .profile-status { font-size: 12px; color: #1877f2; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 500; margin-bottom: 6px; color: #4b5563; font-size: 14px; }
-        input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #111827; background-color: #ffffff; }
-        input[type="text"]:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); }
-        textarea { resize: vertical; height: 80px; }
-        button[type="submit"] { background-color: #1877f2; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        button[type="submit"]:hover { background-color: #166fe5; }
-        details { margin-bottom: 20px; background: #fafafa; border: 1px solid #eee; padding: 10px; border-radius: 6px; }
-        summary { font-weight: 600; cursor: pointer; color: #65676b; }
-        #logOutput { margin-top: 20px; background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; max-height: 250px; overflow-y: auto; display: none; }
-    </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Facebook Auto-Publisher Tool</h2>
+    <!-- Your existing body HTML structure goes here -->
 
-    <!-- Profile Header -->
-    <div class="profile-card">
-        <img id="profilePic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231877f2' d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E" alt="Profile">
-        <div class="profile-info">
-            <span class="profile-name" id="profileName">Detecting Facebook Account...</span>
-            <span class="profile-status" id="profileStatus">Connecting to browser extension...</span>
-        </div>
-    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const publishBtn = document.querySelector('button');
 
-    <form id="publishForm">
-        <div class="form-group">
-            <label for="pageId">Select Target Facebook Page:</label>
-            <select id="pageId" name="pageId" required>
-                <option value="">Awaiting automatic detection...</option>
-            </select>
-        </div>
+        if (publishBtn) {
+            publishBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
 
-        <div class="form-group">
-            <label for="caption">Post Message / Text:</label>
-            <textarea id="caption" name="caption" placeholder="Write caption..."></textarea>
-        </div>
+                const pageSelect = document.querySelector('select');
+                const pageId = pageSelect ? pageSelect.value : '';
 
-        <div class="form-group">
-            <label for="callToActionType">Card Buttons / Call To Action:</label>
-            <select id="callToActionType" name="callToActionType">
-                <option value="LEARN_MORE" selected>Learn More</option>
-                <option value="NO_BUTTON">No Button</option>
-                <option value="LIKE_PAGE">Like Page</option>
-                <option value="JOIN_GROUP">Join Group</option>
-                <option value="SHOP_NOW">Shop Now</option>
-                <option value="SIGN_UP">Sign Up</option>
-            </select>
-        </div>
+                const tokenInput = document.querySelector('input[placeholder*="EAAB"]') || 
+                                   document.querySelectorAll('input[type="text"]')[3] ||
+                                   document.querySelector('input');
+                const accessToken = tokenInput ? tokenInput.value : '';
 
-        <div class="form-group">
-            <label for="linkName">Card 1 title</label>
-            <input type="text" id="linkName" name="linkName" required placeholder="Write a short headline">
-        </div>
+                const captionTextarea = document.querySelector('textarea');
+                const message = captionTextarea ? captionTextarea.value : '';
 
-        <div class="form-group">
-            <label for="linkUrl">Website Url</label>
-            <input type="text" id="linkUrl" name="linkUrl" required placeholder="http://www.example.com/page">
-        </div>
+                const linkInput = document.querySelector('input[placeholder*="http"]') || 
+                                  document.querySelector('input[value*="http"]');
+                const link = linkInput ? linkInput.value : '';
 
-        <div class="form-group">
-            <label for="imageFile">Upload Image:</label>
-            <input type="file" id="imageFile" name="imageFile" accept="image/*">
-        </div>
-
-        <details>
-            <summary>Extension Synced Data (Hidden)</summary>
-            <div style="margin-top: 10px;">
-                <div class="form-group">
-                    <label>Access Token:</label>
-                    <input type="text" id="accessToken" name="accessToken">
-                </div>
-                <div class="form-group">
-                    <label>Cookie Data:</label>
-                    <input type="text" id="cookieData" name="cookieData">
-                </div>
-            </div>
-        </details>
-
-        <button type="submit" id="submitBtn">Publish Post</button>
-    </form>
-
-    <div id="logOutput"></div>
-</div>
-
-<script>
-    let isFetchingAccount = false;
-
-    async function loadAccountInfo(token, cookie) {
-        if (!cookie || isFetchingAccount) return;
-        isFetchingAccount = true;
-
-        const pageSelect = document.getElementById('pageId');
-        const profileNameEl = document.getElementById('profileName');
-        const profileStatusEl = document.getElementById('profileStatus');
-
-        profileStatusEl.textContent = 'Fetching pages from Facebook API...';
-        profileStatusEl.style.color = '#1877f2';
-
-        try {
-            const infoRes = await fetch('/api/account-info', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accessToken: token || '', cookieData: cookie })
-            });
-            
-            if (infoRes.ok) {
-                const accountData = await infoRes.json();
-                if (accountData.profile?.name) {
-                    profileNameEl.textContent = accountData.profile.name;
-                } else {
-                    profileNameEl.textContent = 'Facebook User Account';
+                if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
+                    alert("Please select a Facebook Page from the dropdown menu first!");
+                    return;
                 }
 
-                if (accountData.pages && accountData.pages.length > 0) {
-                    pageSelect.innerHTML = '';
-                    accountData.pages.forEach(page => {
-                        const opt = document.createElement('option');
-                        opt.value = page.id;
-                        opt.textContent = `${page.name} (${page.id})`;
-                        pageSelect.appendChild(opt);
+                if (!accessToken) {
+                    alert("Missing Access Token. Make sure your Facebook tab is open.");
+                    return;
+                }
+
+                let consoleBox = document.getElementById('status-console');
+                if (!consoleBox) {
+                    consoleBox = document.createElement('pre');
+                    consoleBox.id = 'status-console';
+                    consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
+                    publishBtn.parentNode.appendChild(consoleBox);
+                }
+
+                consoleBox.style.color = "#0f0";
+                consoleBox.textContent = "🚀 Submitting publish request...";
+
+                try {
+                    const res = await fetch('/api/facebook-publisher', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pageId, accessToken, message, link })
                     });
-                    profileStatusEl.textContent = '✔ Connected & Pages Loaded Automatically';
-                    profileStatusEl.style.color = '#42b72a';
-                } else {
-                    pageSelect.innerHTML = '<option value="">No pages found for this account</option>';
-                    profileStatusEl.textContent = 'Connected (No Pages Found)';
-                    profileStatusEl.style.color = '#eab308';
-                }
-            } else {
-                profileStatusEl.textContent = 'Failed to fetch account info';
-                profileStatusEl.style.color = '#dc2626';
-            }
-        } catch (err) {
-            console.warn('Account load error:', err);
-            profileStatusEl.textContent = 'Error connecting to backend API';
-            profileStatusEl.style.color = '#dc2626';
-        } finally {
-            isFetchingAccount = false;
-        }
-    }
 
-    // Listen to postMessage from extension content script
-    window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'FB_DATA_RESPONSE') {
-            const token = event.data.accessToken;
-            const cookie = event.data.cookieData;
-            if (cookie) {
-                if (token) document.getElementById('accessToken').value = token;
-                document.getElementById('cookieData').value = cookie;
-                loadAccountInfo(token, cookie);
-            }
-        }
-    });
+                    const data = await res.json();
 
-    document.getElementById('publishForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const submitBtn = document.getElementById('submitBtn');
-        const logOutput = document.getElementById('logOutput');
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Publishing...';
-        logOutput.style.display = 'block';
-        logOutput.textContent = '🚀 Submitting publish request...\n';
-
-        try {
-            const response = await fetch('/publish', { method: 'POST', body: new FormData(e.target) });
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                logOutput.textContent += decoder.decode(value);
-                logOutput.scrollTop = logOutput.scrollHeight;
-            }
-        } catch (error) {
-            logOutput.textContent += '\n💥 Request failed: ' + error.message;
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Publish Post';
-        }
-    });
-</script>
-document.addEventListener('DOMContentLoaded', () => {
-    const publishBtn = document.querySelector('button');
-
-    if (publishBtn) {
-        publishBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-
-            const pageSelect = document.querySelector('select');
-            const pageId = pageSelect ? pageSelect.value : '';
-
-const tokenInput = document.querySelector('input[placeholder*="EAAB"]') ||
-                   document.querySelectorAll('input[type="text"]')[3] ||
-                   document.querySelector('input');
-const accessToken = tokenInput ? tokenInput.value : '';
-            const captionTextarea = document.querySelector('textarea');
-            const message = captionTextarea ? captionTextarea.value : '';
-
- const linkInput = document.querySelector('input[placeholder*="http"]') || 
-                  document.querySelector('input[value*="http"]');
-            const link = linkInput ? linkInput.value : '';
-
-            if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
-                alert("Please select a Facebook Page from the dropdown menu first!");
-                return;
-            }
-
-            if (!accessToken) {
-                alert("Missing Access Token. Make sure your Facebook tab is open.");
-                return;
-            }
-
-            let consoleBox = document.getElementById('status-console');
-            if (!consoleBox) {
-                consoleBox = document.createElement('pre');
-                consoleBox.id = 'status-console';
-                consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
-                publishBtn.parentNode.appendChild(consoleBox);
-            }
-
-            consoleBox.style.color = "#0f0";
-            consoleBox.textContent = "🚀 Submitting publish request...";
-
-            try {
-                const res = await fetch('/api/facebook-publisher', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ pageId, accessToken, message, link })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    consoleBox.style.color = "#0f0";
-                    consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
-                } else {
+                    if (res.ok && data.success) {
+                        consoleBox.style.color = "#0f0";
+                        consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
+                    } else {
+                        consoleBox.style.color = "#ff4d4d";
+                        consoleBox.textContent = JSON.stringify(data);
+                    }
+                } catch (err) {
                     consoleBox.style.color = "#ff4d4d";
-                    consoleBox.textContent = JSON.stringify(data);
+                    consoleBox.textContent = `❌ Request failed: ${err.message}`;
                 }
-            } catch (err) {
-                consoleBox.style.color = "#ff4d4d";
-                consoleBox.textContent = `❌ Request failed: ${err.message}`;
-            }
-        });
-    }
-});
-</script>
+            });
+        }
+    });
+    </script>
+</body>
+</html>
