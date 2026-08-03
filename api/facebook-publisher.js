@@ -1,5 +1,4 @@
-export default async function handler(req, res) {
-  // Set JSON content type explicitly
+module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method !== 'POST') {
@@ -38,4 +37,4 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
-}
+};
