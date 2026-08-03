@@ -7,8 +7,6 @@ module.exports = async (req, res) => {
 
   try {
     let body = req.body;
-    
-    // Handle stringified bodies if sent from certain fetch configurations
     if (typeof body === 'string') {
       try {
         body = JSON.parse(body);
@@ -29,12 +27,15 @@ module.exports = async (req, res) => {
       message: message || '',
     });
 
-    // If an image URL is provided, post to the /photos endpoint instead of /feed
+    // Handle Link
+    if (link && link.startsWith('http') && !link.includes('vercel.com')) {
+      params.append('link', link);
+    }
+
+    // Handle Image upload or URL attachment
     if (imageUrl) {
       endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
       params.append('url', imageUrl);
-    } else if (link && link.startsWith('http') && !link.includes('vercel.com')) {
-      params.append('link', link);
     }
 
     const fbRes = await fetch(endpoint, {
