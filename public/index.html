@@ -7,14 +7,14 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
-    .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    h2 { margin-top: 0; color: #1877f2; }
-    .account-badge { background: #e7f3ff; padding: 10px; border-radius: 6px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .container { width: 100%; max-width: 450px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #1877f2; font-size: 20px; }
+    .account-badge { background: #e7f3ff; padding: 12px; border-radius: 6px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
     .form-group { margin-bottom: 15px; }
     label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #333; }
     input[type="text"], select, textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
     textarea { height: 70px; resize: vertical; }
-    .btn-publish { width: 100%; background: #1877f2; color: white; border: none; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+    .btn-publish { width: 100%; background: #1877f2; color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; }
     .btn-publish:hover { background: #166fe5; }
     .synced-data { background: #f0f0f0; border-radius: 6px; padding: 10px; margin-top: 20px; font-size: 12px; }
     details summary { font-weight: bold; cursor: pointer; }
@@ -26,7 +26,7 @@
     <h2>Facebook Auto-Publisher Tool</h2>
 
     <div class="account-badge">
-      <div style="font-weight: bold; color: #1877f2;">f</div>
+      <div style="font-weight: bold; color: #1877f2; font-size: 18px;">f</div>
       <div>
         <strong>Connected Account ID:</strong><br>
         <span id="account-id">100023525146491</span>
@@ -36,6 +36,8 @@
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
+        <option value="1146420388547819">Chika Insider (1146420388547819)</option>
+        <option value="1745069418922197">Happpy (1745069418922197)</option>
         <option value="100132885889772">Cute Pets (100132885889772)</option>
       </select>
     </div>
@@ -76,7 +78,7 @@
         <summary>Extension Synced Data (Hidden)</summary>
         <div style="margin-top: 8px;">
           <label>Access Token:</label>
-          <input type="text" value="EAABsBCS1iHgBSOETlMyLnrg" placeholder="EAAB..." readonly>
+          <input type="text" id="access-token-input" value="EAABsbCS1iHgBSFzdJ8aAxgKD8oJo0R2TkpmIYczPvfdVo31ZB0lwQYi" placeholder="EAAB..." readonly>
         </div>
       </details>
     </div>
@@ -84,7 +86,7 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-      const publishBtn = document.querySelector('button');
+      const publishBtn = document.querySelector('.btn-publish') || document.querySelector('button');
 
       if (publishBtn) {
           publishBtn.addEventListener('click', async (e) => {
@@ -93,16 +95,17 @@
               const pageSelect = document.querySelector('select');
               const pageId = pageSelect ? pageSelect.value : '';
 
-              const tokenInput = document.querySelector('input[placeholder*="EAAB"]') || 
-                                 document.querySelectorAll('input[type="text"]')[3] ||
-                                 document.querySelector('input');
+              // Targets the exact Access Token readonly input field
+              const tokenInput = document.getElementById('access-token-input') || 
+                                 document.querySelector('input[placeholder*="EAAB"]') || 
+                                 document.querySelector('input[readonly]');
               const accessToken = tokenInput ? tokenInput.value : '';
 
               const captionTextarea = document.querySelector('textarea');
               const message = captionTextarea ? captionTextarea.value : '';
 
-              const linkInput = document.querySelector('input[placeholder*="http"]') || 
-                                document.querySelector('input[value*="http"]');
+              const linkInput = document.getElementById('website-url') || 
+                                document.querySelector('input[placeholder*="http"]');
               const link = linkInput ? linkInput.value : '';
 
               if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting")) {
@@ -119,7 +122,7 @@
               if (!consoleBox) {
                   consoleBox = document.createElement('pre');
                   consoleBox.id = 'status-console';
-                  consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px;';
+                  consoleBox.style.cssText = 'background:#111; color:#0f0; padding:10px; border-radius:6px; font-family:monospace; margin-top:10px; white-space: pre-wrap; word-break: break-all;';
                   publishBtn.parentNode.appendChild(consoleBox);
               }
 
@@ -140,7 +143,7 @@
                       consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
                   } else {
                       consoleBox.style.color = "#ff4d4d";
-                      consoleBox.textContent = JSON.stringify(data);
+                      consoleBox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
                   }
               } catch (err) {
                   consoleBox.style.color = "#ff4d4d";
