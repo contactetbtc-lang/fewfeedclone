@@ -118,7 +118,7 @@
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
-        <option value="">Awaiting automatic detection...</option>
+        <option value="" id="default-page-option">Awaiting automatic detection...</option>
       </select>
     </div>
 
@@ -231,7 +231,7 @@
                       consoleBox.textContent = `✅ Published successfully! Post ID: ${data.postId}`;
                   } else {
                       consoleBox.style.color = "#ff4d4d";
-                      consolebox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
+                      consoleBox.textContent = `❌ Error: ${data.error || JSON.stringify(data)}`;
                   }
               } catch (err) {
                   let consoleBox = document.getElementById('status-console');
