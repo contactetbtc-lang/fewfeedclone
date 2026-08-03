@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Ad Publisher - Full View</title>
+    <title>Facebook Ad Publisher</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col items-center p-4">
@@ -13,11 +13,11 @@
         <!-- Left Sidebar Controls -->
         <div class="md:col-span-5 bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4">
             
-            <!-- Auto-detected User Profile Box -->
+            <!-- Real Dynamic User Profile Box -->
             <div id="profile-box" class="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <img id="user-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full object-cover border" alt="Avatar">
                 <div>
-                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Detecting profile...</h4>
+                    <h4 id="user-name" class="font-semibold text-sm text-slate-700">Detecting user...</h4>
                     <p id="user-id" class="text-xs text-slate-400">---</p>
                 </div>
             </div>
@@ -26,7 +26,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Facebook Pages</label>
                 <select id="page-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Loading pages...</option>
+                    <option value="">Fetching your pages...</option>
                 </select>
             </div>
 
@@ -34,7 +34,7 @@
             <div>
                 <label class="block text-xs font-medium text-slate-500 mb-1">Ad Accounts</label>
                 <select id="adaccount-select" class="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>Loading ad accounts...</option>
+                    <option value="">Fetching ad accounts...</option>
                 </select>
             </div>
 
@@ -90,11 +90,11 @@
 
         </div>
 
-        <!-- Right Full-View Preview & Publish Area (fewfeed.app style) -->
+        <!-- Right Full-View Preview & Publish Area -->
         <div class="md:col-span-7 space-y-4">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between h-full min-h-[650px]">
                 
-                <!-- Preview Top Header & Publish Button -->
+                <!-- Preview Header & Publish Button -->
                 <div class="flex items-center justify-between border-b pb-4">
                     <div class="flex items-center space-x-3">
                         <img id="preview-avatar" src="https://via.placeholder.com/40" class="w-10 h-10 rounded-full object-cover border" alt="Page Avatar">
@@ -108,12 +108,10 @@
 
                 <!-- Full-View Ad Creative Preview Box -->
                 <div class="border-2 border-blue-400 rounded-xl overflow-hidden my-auto bg-white flex flex-col shadow-sm">
-                    <!-- Image Fullview Container -->
                     <div id="preview-image-container" class="w-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm overflow-hidden relative min-h-[350px] max-h-[450px]">
                         <span id="preview-image-placeholder" class="py-20">Ad Creative Preview Area</span>
                         <img id="preview-img" class="w-full h-full object-cover hidden" alt="Full Preview">
                     </div>
-                    <!-- Card Footer Details -->
                     <div class="p-4 bg-white border-t flex items-center justify-between">
                         <div>
                             <span id="preview-display-link" class="text-xs text-slate-400 block uppercase tracking-wider">facebook.com</span>
@@ -133,7 +131,7 @@
 
     <!-- Hidden Extension Data Sync Helper -->
     <div class="w-full max-w-7xl mt-6 p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-500">
-        <details>
+        <details open>
             <summary class="cursor-pointer font-semibold text-slate-600">Extension Synced Data (Hidden)</summary>
             <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -142,40 +140,41 @@
                 </div>
                 <div>
                     <label class="block font-medium mb-1">Cookie Data:</label>
-                    <input type="text" id="sync-cookie" class="w-full p-2 border rounded bg-slate-50" value="c_user=100023525146491;">
+                    <input type="text" id="sync-cookie" class="w-full p-2 border rounded bg-slate-50" value="c_user=100023525146491; dpr=0.8999999761581421;">
                 </div>
             </div>
         </details>
     </div>
 
     <script>
-        // Automatically fetch profile, pages, and ad accounts on load
-        async function loadAccountData() {
+        // Fetch real account profile using token & cookie data
+        async function fetchRealUserData() {
             const token = document.getElementById('sync-token').value.trim();
+            const cookie = document.getElementById('sync-cookie').value.trim();
             if (!token) return;
 
             try {
                 const res = await fetch('/api/facebook-accounts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ accessToken: token })
+                    body: JSON.stringify({ accessToken: token, cookieData: cookie })
                 });
                 const data = await res.json();
 
                 if (data.success) {
-                    // Update User Profile
+                    // Update User Profile with real fetched info
                     if (data.user) {
-                        document.getElementById('user-name').innerText = data.user.name || 'Elaine Sefra Sandoval';
-                        document.getElementById('user-id').innerText = data.user.id || '100073165332635';
+                        document.getElementById('user-name').innerText = data.user.name || 'Connected User';
+                        document.getElementById('user-id').innerText = data.user.id || 'Active Account';
                         if (data.user.picture?.data?.url) {
                             document.getElementById('user-avatar').src = data.user.picture.data.url;
                         }
                     }
 
-                    // Populate Pages
+                    // Populate Pages dynamically
                     const pageSelect = document.getElementById('page-select');
                     pageSelect.innerHTML = '';
-                    if (data.pages.length > 0) {
+                    if (data.pages && data.pages.length > 0) {
                         data.pages.forEach((p, index) => {
                             const opt = document.createElement('option');
                             opt.value = p.id;
@@ -184,17 +183,16 @@
                             if (index === 0) {
                                 document.getElementById('preview-page-name').innerText = p.name;
                                 document.getElementById('preview-page-id').innerText = p.id;
-                                if(p.picture?.data?.url) document.getElementById('preview-avatar').src = p.picture.data.url;
                             }
                         });
                     } else {
-                        pageSelect.innerHTML = `<option value="1213616310596046">Marites Diaries (1213616310596046)</option>`;
+                        pageSelect.innerHTML = `<option value="">No pages found for this token</option>`;
                     }
 
-                    // Populate Ad Accounts
+                    // Populate Ad Accounts dynamically
                     const adSelect = document.getElementById('adaccount-select');
                     adSelect.innerHTML = '';
-                    if (data.adAccounts.length > 0) {
+                    if (data.adAccounts && data.adAccounts.length > 0) {
                         data.adAccounts.forEach(a => {
                             const opt = document.createElement('option');
                             opt.value = a.account_id;
@@ -202,11 +200,11 @@
                             adSelect.appendChild(opt);
                         });
                     } else {
-                        adSelect.innerHTML = `<option value="9346050792090257">9346050792090257</option>`;
+                        adSelect.innerHTML = `<option value="">No ad accounts available</option>`;
                     }
                 }
             } catch (err) {
-                console.error('Auto-detection error:', err);
+                console.error('Error fetching real user data:', err);
             }
         }
 
@@ -283,7 +281,7 @@
             }
         });
 
-        window.onload = loadAccountData;
+        window.onload = fetchRealUserData;
     </script>
 </body>
 </html>
