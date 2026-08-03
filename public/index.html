@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facebook Auto-Publisher Tool</title>
+  <!-- Load Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -148,7 +150,7 @@
 
     <div class="form-group">
       <label for="upload-image">Upload Image:</label>
-      <input type="file" id="upload-image">
+      <input type="file" id="upload-image" accept="image/*">
     </div>
 
     <button type="button" class="btn-publish">Publish Post</button>
@@ -170,6 +172,11 @@
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Supabase with your project credentials
+      const supabaseUrl = 'https://xhxvxkekhbjgbtsfsmzb.supabase.co';
+      const supabaseKey = 'sb_publishable_wQd-Kq8cJSb4USivjU2jvg_VwgUs5dA';
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
       const publishBtn = document.querySelector('.btn-publish');
 
       if (publishBtn) {
@@ -187,6 +194,8 @@
 
               const linkInput = document.getElementById('website-url');
               const link = linkInput ? linkInput.value : '';
+
+              const fileInput = document.getElementById('upload-image');
 
               if (!pageId || pageId.includes("Awaiting") || pageId.includes("Detecting") || pageId.includes("detected")) {
                   alert("Please select a Facebook Page from the dropdown menu first!");
@@ -206,13 +215,37 @@
               }
 
               consoleBox.style.color = "#0f0";
-              consoleBox.textContent = "🚀 Submitting publish request...";
+              consoleBox.textContent = "🚀 Uploading image and submitting publish request...";
 
               try {
+                  let imageUrl = '';
+
+                  // 1. Upload local file to Supabase Storage bucket ('facebook-uploads') if selected
+                  if (fileInput && fileInput.files && fileInput.files[0]) {
+                      const file = fileInput.files[0];
+                      const fileName = `fb-post-${Date.now()}-${file.name}`;
+
+                      const { data: uploadData, error: uploadError } = await supabase.storage
+                          .from('facebook-uploads')
+                          .upload(fileName, file);
+
+                      if (uploadError) {
+                          throw new Error('Image storage upload failed: ' + uploadError.message);
+                      }
+
+                      // 2. Retrieve public URL for Facebook to download
+                      const { data: publicUrlData } = supabase.storage
+                          .from('facebook-uploads')
+                          .getPublicUrl(fileName);
+
+                      imageUrl = publicUrlData.publicUrl;
+                  }
+
+                  // 3. Send payload to backend route including the Supabase image URL
                   const res = await fetch('/api/facebook-publisher', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ pageId, accessToken, message, link })
+                      body: JSON.stringify({ pageId, accessToken, message, link, imageUrl })
                   });
 
                   const contentType = res.headers.get("content-type");

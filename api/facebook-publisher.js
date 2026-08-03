@@ -27,12 +27,12 @@ module.exports = async (req, res) => {
       message: message || '',
     });
 
-    // Handle Link
+    // Append valid public website URL if provided
     if (link && link.startsWith('http') && !link.includes('vercel.com')) {
       params.append('link', link);
     }
 
-    // Handle Image upload or URL attachment
+    // If an image URL is present from Supabase, switch endpoint to /photos
     if (imageUrl) {
       endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
       params.append('url', imageUrl);
