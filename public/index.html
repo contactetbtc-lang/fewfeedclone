@@ -221,7 +221,9 @@
                       data = await res.json();
                   } else {
                       const text = await res.text();
-                      throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+                      const match = text.match(/<title>(.*?)<\/title>/i);
+                      const title = match ? match[1] : "Server Error";
+                      throw new Error(`Endpoint returned HTML (${title}). Check your backend /api/facebook-publisher route.`);
                   }
 
                   if (res.ok && data.success) {
