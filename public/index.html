@@ -108,42 +108,42 @@
     <h2>Facebook Auto-Publisher Tool</h2>
 
     <div class="account-badge">
-      <div style="font-weight: bold; color: #1877f2; font-size: 18px;">f</div>
+      <div style="font-weight: bold; color: #1877f2; font-size: 18px; background: #fff; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">f</div>
       <div>
-        <strong>Connected Account ID:</strong><br>
-        <span id="account-id">Awaiting extension sync...</span>
+        <strong>Connected Account ID: <span id="account-id">100023525146491</span></strong><br>
+        <span style="font-size: 12px; color: #666;" id="account-status">Connecting to browser extension...</span>
       </div>
     </div>
 
     <div class="form-group">
       <label for="page-select">Select Target Facebook Page:</label>
       <select id="page-select">
-        <option value="">Awaiting extension sync...</option>
+        <option value="">Awaiting automatic detection...</option>
       </select>
     </div>
 
     <div class="form-group">
       <label for="post-message">Post Message / Text:</label>
-      <textarea id="post-message" placeholder="Write your post content here..."></textarea>
+      <textarea id="post-message" placeholder="Write caption..."></textarea>
     </div>
 
     <div class="form-group">
-      <label for="cta-button">Card Buttons / Call to Action:</label>
+      <label for="cta-button">Card Buttons / Call To Action:</label>
       <select id="cta-button">
-        <option value="">No Button</option>
         <option value="LEARN_MORE">Learn More</option>
         <option value="SHOP_NOW">Shop Now</option>
+        <option value="">No Button</option>
       </select>
     </div>
 
     <div class="form-group">
       <label for="card-title">Card 1 title</label>
-      <input type="text" id="card-title" placeholder="Title">
+      <input type="text" id="card-title" placeholder="Write a short headline">
     </div>
 
     <div class="form-group">
       <label for="website-url">Website Url</label>
-      <input type="text" id="website-url" placeholder="https://">
+      <input type="text" id="website-url" placeholder="http://www.example.com/page">
     </div>
 
     <div class="form-group">
@@ -158,7 +158,11 @@
         <summary>Extension Synced Data (Hidden)</summary>
         <div style="margin-top: 8px;">
           <label>Access Token:</label>
-          <input type="text" id="access-token-input" placeholder="EAAB..." data-token="">
+          <input type="text" id="access-token-input" value="EAABsbCS1iHgBSEAiTqxbhbSsDAEBa0os2WAZAcVIVYGQbTrpXNzwhdTD5vud6rilDZCC" readonly>
+        </div>
+        <div style="margin-top: 8px;">
+          <label>Cookie Data:</label>
+          <input type="text" id="cookie-data-input" value="c_user=100023525146491; dpr=0.8999999761581421; wd=1366x641; presence=C%78" readonly>
         </div>
       </details>
     </div>
@@ -176,7 +180,7 @@
               const pageId = pageSelect ? pageSelect.value : '';
 
               const tokenInput = document.getElementById('access-token-input');
-              const accessToken = tokenInput ? (tokenInput.value || tokenInput.getAttribute('data-token')) : '';
+              const accessToken = tokenInput ? tokenInput.value : '';
 
               const captionTextarea = document.getElementById('post-message');
               const message = captionTextarea ? captionTextarea.value : '';
@@ -189,8 +193,8 @@
                   return;
               }
 
-              if (!accessToken || accessToken.includes("EAAB...")) {
-                  alert("Missing Access Token. Make sure your Chrome extension is connected and active.");
+              if (!accessToken) {
+                  alert("Missing Access Token. Make sure your extension is connected.");
                   return;
               }
 
