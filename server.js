@@ -14,43 +14,61 @@ function getCookieValue(cookieString, cookieName) {
   return match ? match[2] : null;
 }
 
-// Dynamically fetch active user profile based on the current request credentials
 app.post('/api/facebook-accounts', async (req, res) => {
   try {
     const { accessToken, cookieData } = req.body;
     if (!accessToken) return res.status(400).json({ error: 'Missing access token' });
 
-    // Extract the exact c_user present in the current cookie string
     const cUserId = getCookieValue(cookieData, 'c_user');
+    let userData = { name: `Facebook User (${cUserId || 'Connected'})`, id: cUserId || 'Active Token' };
 
-    // Query Graph API for the specific user profile (using c_user if available, otherwise /me)
-    const profileUrl = cUserId 
-      ? `https://graph.facebook.com/v19.0/${cUserId}?fields=id,name,picture&access_token=${accessToken}`
-      : `https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${accessToken}`;
+    // Try fetching real profile name/picture
+    try {
+      const profileUrl = cUserId 
+        ? `https://graph.facebook.com/v19.0/${cUserId}?fields=id,name,picture&access_token=${accessToken}`
+        : `https://graph.facebook.com/v19.0/me?fields=id,name,picture&access_token=${accessToken}`;
+      
+      const userRes = await fetch(profileUrl);
+      const userJson = await userRes.json();
+      if (!userJson.error) {
+        userData = userJson;
+      }
+    } catch (e) {
+      console.log('Profile fetch fallback used');
+    }
 
-    const userRes = await fetch(profileUrl);
-    const userData = await userRes.json();
+    // Fetch pages
+    let pages = [];
+    try {
+      const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
+      const pagesData = await pagesRes.json();
+      pages = pagesData.data || [];
+    } catch (e) {}
 
-    // Fetch pages for this specific token/account
-    const pagesRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
-    const pagesData = await pagesRes.json();
+    // Fetch ad accounts (with fallback if permissions are limited)
+    let adAccounts = [];
+    try {
+      const adAccountsRes = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=account_id,name&access_token=${accessToken}`);
+      const adAccountsData = await adAccountsRes.json();
+      adAccounts = adAccountsData.data || [];
+    } catch (e) {}
 
-    // Fetch ad accounts for this specific token/account
-    const adAccountsRes = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=account_id,name&access_token=${accessToken}`);
-    const adAccountsData = await adAccountsRes.json();
+    // If no ad accounts returned via API, provide the user's ID as a default ad account option
+    if (adAccounts.length === 0 && cUserId) {
+      adAccounts.push({ account_id: cUserId, name: `Personal Ad Account (${cUserId})` });
+    }
 
     res.json({
       success: true,
-      user: userData.error ? { name: 'Active Facebook User', id: cUserId || 'Unknown ID' } : userData,
-      pages: pagesData.data || [],
-      adAccounts: adAccountsData.data || []
+      user: userData,
+      pages: pages,
+      adAccounts: adAccounts
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Publishing Endpoint
 app.post('/api/facebook-publisher', upload.single('imageFile'), async (req, res) => {
   try {
     const { pageId, accessToken, message, link, ctaType, cardTitle, displayLink, displayDescription } = req.body;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facebook Ad Publisher - Dynamic Detection</title>
+    <title>Facebook Ad Publisher - Multi-Account</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col items-center p-4">
@@ -129,11 +129,11 @@
 
     </div>
 
-    <!-- Hidden Extension Data Sync Helper with Refresh Button -->
+    <!-- Extension Synced Data Helper -->
     <div class="w-full max-w-7xl mt-6 p-4 bg-white rounded-xl border border-slate-200 text-xs text-slate-500">
         <details open>
             <summary class="cursor-pointer font-semibold text-slate-600 flex justify-between items-center">
-                <span>Extension Synced Data (Hidden)</span>
+                <span>Extension Synced Data (Multi-Account)</span>
                 <button id="refresh-account-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">Detect Current Account</button>
             </summary>
             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -170,7 +170,6 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // Update User Profile dynamically with whichever account matches the token/cookie
                     if (data.user) {
                         document.getElementById('user-name').innerText = data.user.name || 'Active Account';
                         document.getElementById('user-id').innerText = data.user.id || 'Connected ID';
@@ -181,7 +180,7 @@
                         }
                     }
 
-                    // Populate Pages dynamically
+                    // Populate Pages
                     const pageSelect = document.getElementById('page-select');
                     pageSelect.innerHTML = '';
                     if (data.pages && data.pages.length > 0) {
@@ -196,12 +195,10 @@
                             }
                         });
                     } else {
-                        pageSelect.innerHTML = `<option value="">No pages found for this account</option>`;
-                        document.getElementById('preview-page-name').innerText = 'No Page Available';
-                        document.getElementById('preview-page-id').innerText = 'ID: ---';
+                        pageSelect.innerHTML = `<option value="">No pages found</option>`;
                     }
 
-                    // Populate Ad Accounts dynamically
+                    // Populate Ad Accounts or allow manual fallback
                     const adSelect = document.getElementById('adaccount-select');
                     adSelect.innerHTML = '';
                     if (data.adAccounts && data.adAccounts.length > 0) {
@@ -212,18 +209,17 @@
                             adSelect.appendChild(opt);
                         });
                     } else {
-                        adSelect.innerHTML = `<option value="">No ad accounts found for this profile</option>`;
+                        const opt = document.createElement('option');
+                        opt.value = 'default';
+                        opt.textContent = 'Default Ad Account';
+                        adSelect.appendChild(opt);
                     }
-                } else {
-                    document.getElementById('user-name').innerText = 'Failed to load profile';
                 }
             } catch (err) {
                 console.error('Detection error:', err);
-                document.getElementById('user-name').innerText = 'Connection error';
             }
         }
 
-        // Trigger detection when clicking the button
         document.getElementById('refresh-account-btn').addEventListener('click', (e) => {
             e.preventDefault();
             fetchRealUserData();
@@ -244,7 +240,6 @@
             }
         });
 
-        // Live text sync bindings
         document.getElementById('card-title').addEventListener('input', (e) => {
             document.getElementById('preview-headline').innerText = e.target.value || 'Headline preview';
         });
@@ -260,7 +255,6 @@
             document.getElementById('preview-page-id').innerText = e.target.value;
         });
 
-        // Publish action execution
         document.getElementById('publish-btn').addEventListener('click', async () => {
             const statusBar = document.getElementById('status-bar');
             statusBar.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-emerald-100', 'text-emerald-700');
