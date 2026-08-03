@@ -36,7 +36,13 @@ module.exports = async (req, res) => {
       body: params.toString()
     });
 
-    const data = await fbRes.json();
+    const text = await fbRes.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return res.status(500).json({ success: false, error: 'Facebook returned non-JSON response: ' + text });
+    }
 
     if (fbRes.ok && data.id) {
       return res.status(200).json({ success: true, postId: data.id });
