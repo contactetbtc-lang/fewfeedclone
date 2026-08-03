@@ -6,9 +6,11 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Safely parse request body across different environments
     let body = req.body;
+    
     if (!body) {
-      return res.status(400).json({ success: false, error: 'Empty request body' });
+      return res.status(400).json({ success: false, error: 'Request body is empty' });
     }
 
     if (typeof body === 'string') {
@@ -31,11 +33,11 @@ module.exports = async (req, res) => {
       message: message || '',
     });
 
-    if (link && link.startsWith('http')) {
+    if (link && typeof link === 'string' && link.startsWith('http')) {
       params.append('link', link);
     }
 
-    if (imageUrl) {
+    if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
       endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
       params.append('url', imageUrl);
     }
@@ -51,7 +53,7 @@ module.exports = async (req, res) => {
     try {
       data = JSON.parse(text);
     } catch (e) {
-      return res.status(500).json({ success: false, error: 'Facebook returned non-JSON: ' + text });
+      return res.status(500).json({ success: false, error: 'Facebook API non-JSON response: ' + text });
     }
 
     if (fbRes.ok && (data.id || data.post_id)) {
@@ -60,6 +62,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: data.error?.message || 'Facebook API error' });
     }
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Server exception: ' + err.message });
+    return res.status(500).json({ success: false, error: 'Internal Function Error: ' + err.message });
   }
 };
