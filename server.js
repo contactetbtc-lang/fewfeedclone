@@ -5,7 +5,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Endpoint for Facebook Publisher
 app.post('/api/facebook-publisher', async (req, res) => {
   try {
     const { pageId, accessToken, message, imageUrl } = req.body || {};
@@ -15,7 +14,6 @@ app.post('/api/facebook-publisher', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Missing Page ID or Access Token' });
     }
 
-    // Automatically fix URL formatting if missing http/https
     if (link && typeof link === 'string' && link.trim() !== '') {
       link = link.trim();
       if (!link.startsWith('http://') && !link.startsWith('https://')) {
@@ -23,6 +21,7 @@ app.post('/api/facebook-publisher', async (req, res) => {
       }
     }
 
+    // Decide whether to post a photo or a regular feed text/link post
     let endpoint = `https://graph.facebook.com/v19.0/${pageId}/feed`;
     const params = new URLSearchParams({
       access_token: accessToken,
@@ -33,9 +32,14 @@ app.post('/api/facebook-publisher', async (req, res) => {
       params.append('link', link);
     }
 
+    // Only use the photo endpoint if a valid image URL is successfully generated
     if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
       endpoint = `https://graph.facebook.com/v19.0/${pageId}/photos`;
       params.append('url', imageUrl);
+      if (message) {
+        params.append('caption', message);
+        params.delete('message'); // Photos endpoint uses 'caption' instead of 'message'
+      }
     }
 
     const fbRes = await fetch(endpoint, {
