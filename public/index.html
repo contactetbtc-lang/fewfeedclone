@@ -220,7 +220,23 @@
             }
         }
 
-        document.getElementById('refresh-account-btn').addEventListener('click', (e) => {
+        
+        // AUTO DETECT TOKEN FROM EXTENSION
+        const tokenInput=document.getElementById('sync-token');
+        const cookieInput=document.getElementById('sync-cookie');
+        let autoLoaded=false;
+        function tryAutoLoad(){
+            const t=tokenInput.value.trim();
+            if(t && !autoLoaded){
+                autoLoaded=true;
+                fetchRealUserData();
+            }
+        }
+        tokenInput.addEventListener('input',()=>{autoLoaded=false;tryAutoLoad();});
+        cookieInput.addEventListener('input',()=>{autoLoaded=false;tryAutoLoad();});
+        setInterval(tryAutoLoad,1000);
+
+document.getElementById('refresh-account-btn').addEventListener('click', (e) => {
             e.preventDefault();
             fetchRealUserData();
         });
